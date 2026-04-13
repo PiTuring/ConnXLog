@@ -1,20 +1,42 @@
-:- op(750, fy, non). 
-:- op(800, xfy, et).  
-:- op(850, xfy, ou). 
-:- op(900, xfy, impl). 
-
+% arbre_indexe.pl
 
 % ============================================================================
-% Structure des noeuds :
-%   noeud(TypePrincipal, Formule, Polarite, Index, 
-%       fils(TypeSecondaire1, ArbreGauche), fils(TypeSecondaire2, ArbreDroit))
-%   feuille(Formule, Polarite, Index)
+% Construction de l'arbre syntaxique indexé 
 %
-% TypePrincipale    : alpha | beta
-% TypeSecondaire    : alpha1 | alpha2 | beta1 | beta2
-% Polarite          : 1 (vrai) | 0 (faux)
-% Index             : entier, numérotation parcours en prondeur
+% Etiquette des noeuds :
+%       etiq_formule(TypePrincipal, TypeSec1, TypeSec2, Formule, Polarite, Index)
+%
+% Etiquette des feuilles :
+%       etiq_formule(atome, none, none, Formule, Polarite, Index)
+%
+%       TypePrincipal  : alpha | beta | atome
+%       TypeSecondaire : alpha1 | alpha2 | beta1 | beta2 | none
+%       Polarite       : 1 (vrai) | 0 (faux)
+%       Index          : entier, numérotation en parcours préordre
 % ============================================================================
+
+:- module(arbre_indexe, [
+    construire_arbre/2,
+    afficher_arbre/1,
+    etiq_type_principal/2,
+    etiq_type_secondaire1/2,
+    etiq_type_secondaire2/2,
+    etiq_formule/2,
+    etiq_polarite/2,
+    etiq_index/2
+]).
+
+:- include(operateurs).
+:- use_module(arbre).
+
+% Accesseurs ------------------------------------------------------------------
+
+etiq_type_principal(etiq_formule(T, _, _, _, _, _), T).
+etiq_type_secondaire1(etiq_formule(_, T, _, _, _, _), T).
+etiq_type_secondaire2(etiq_formule(_, _, T, _, _, _), T).
+etiq_formule(etiq_formule(_, _, _, F, _, _), F).
+etiq_polarite(etiq_formule(_, _, _, _, P, _), P).
+etiq_index(etiq_formule(_, _, _, _, _, I), I).
 
 % ============================================================================
 % etiqueter(+Formule, +Polarite, +IndexIn, -IndexOut, -Arbre)
@@ -28,27 +50,24 @@
 
 % (A et B, 1) -> (A, 1, alpha1) | (B, 1, alpha2)
 etiqueter(A et B, 1, IndexIn, IndexOut,
-        noeud(alpha, A et B, 1, IndexIn,
-            fils(alpha1, ArbreA),
-            fils(alpha2, ArbreB))) :-
+        noeud(etiq_formule(alpha, alpha1, alpha2, A et B, 1, IndexIn),
+              ArbreA, ArbreB)) :-
     Index1 is IndexIn + 1,
     etiqueter(A, 1, Index1, IndexMid, ArbreA),
     etiqueter(B, 1, IndexMid, IndexOut, ArbreB).
 
 % (A ou B, 0) -> (A, 0, alpha1) | (B, 0, alpha2)
 etiqueter(A ou B, 0, IndexIn, IndexOut,
-        noeud(alpha, A ou B, 0, IndexIn,
-            fils(alpha1, ArbreA),
-            fils(alpha2, ArbreB))) :-
+        noeud(etiq_formule(alpha, alpha1, alpha2, A ou B, 0, IndexIn),
+              ArbreA, ArbreB)) :-
     Index1 is IndexIn + 1,
     etiqueter(A, 0, Index1, IndexMid, ArbreA),
     etiqueter(B, 0, IndexMid, IndexOut, ArbreB).
 
 % (A impl B, 0) -> (A, 1, alpha1) | (B, 0, alpha2)
 etiqueter(A impl B, 0, IndexIn, IndexOut,
-        noeud(alpha, A impl B, 0, IndexIn,
-            fils(alpha1, ArbreA),
-            fils(alpha2, ArbreB))) :-
+        noeud(etiq_formule(alpha, alpha1, alpha2, A impl B, 0, IndexIn),
+              ArbreA, ArbreB)) :-
     Index1 is IndexIn + 1,
     etiqueter(A, 1, Index1, IndexMid, ArbreA),
     etiqueter(B, 0, IndexMid, IndexOut, ArbreB).
@@ -59,38 +78,37 @@ etiqueter(non A, Polarite, IndexIn, IndexOut, Arbre) :-
     etiqueter(A, PolariteInverse, IndexIn, IndexOut, Arbre).
 
 
-% Règles BETA ---------------------------------------------------------------
+% Règles BETA ----------------------------------------------------------------
 
 % (A et B, 0) -> (A, 0, beta1) | (B, 0, beta2)
 etiqueter(A et B, 0, IndexIn, IndexOut,
-        noeud(beta, A et B, 0, IndexIn,
-            fils(beta1, ArbreA),
-            fils(beta2, ArbreB))) :-
+        noeud(etiq_formule(beta, beta1, beta2, A et B, 0, IndexIn),
+              ArbreA, ArbreB)) :-
     Index1 is IndexIn + 1,
     etiqueter(A, 0, Index1, IndexMid, ArbreA),
     etiqueter(B, 0, IndexMid, IndexOut, ArbreB).
 
 % (A ou B, 1) -> (A, 1, beta1) | (B, 1, beta2)
 etiqueter(A ou B, 1, IndexIn, IndexOut,
-        noeud(beta, A ou B, 1, IndexIn,
-            fils(beta1, ArbreA),
-            fils(beta2, ArbreB))) :-
+        noeud(etiq_formule(beta, beta1, beta2, A ou B, 1, IndexIn),
+              ArbreA, ArbreB)) :-
     Index1 is IndexIn + 1,
     etiqueter(A, 1, Index1, IndexMid, ArbreA),
     etiqueter(B, 1, IndexMid, IndexOut, ArbreB).
 
 % (A impl B, 1) -> (A, 0, beta1) | (B, 1, beta2)
 etiqueter(A impl B, 1, IndexIn, IndexOut,
-        noeud(beta, A impl B, 1, IndexIn,
-            fils(beta1, ArbreA),
-            fils(beta2, ArbreB))) :-
+        noeud(etiq_formule(beta, beta1, beta2, A impl B, 1, IndexIn),
+              ArbreA, ArbreB)) :-
     Index1 is IndexIn + 1,
     etiqueter(A, 0, Index1, IndexMid, ArbreA),
     etiqueter(B, 1, IndexMid, IndexOut, ArbreB).
 
+% Atomes (feuilles) ------------------------------------------------------------
+
 
 % Si A est un atome, alors le résultat est une feuille.
-etiqueter(A, Polarite, Index, IndexOut, feuille(A, Polarite, Index)) :-
+etiqueter(A, Polarite, Index, IndexOut, feuille(etiq_formule(atome, none, none, A, Polarite, Index))) :-
     atom(A),
     IndexOut is Index + 1.
 
@@ -105,27 +123,34 @@ construire_arbre(Formule, Arbre) :-
     etiqueter(Formule, 0, 0, _, Arbre).
 
 % ============================================================================
-% CONSTRUCTION ARBRE (pour debug)
+% AFFICHAGE ARBRE (pour debug)
 %   afficher_arbre(+Arbre)
 % ============================================================================
 
 afficher_arbre(Arbre) :-
     afficher_arbre(Arbre, 0).
 
-afficher_arbre(feuille(Formule, Polarite, Index), Profondeur) :-
+afficher_arbre(feuille(Etiquette), Profondeur) :-
+    etiq_index(Etiquette, Index),
+    etiq_formule(Etiquette, Formule),
+    etiq_polarite(Etiquette, Polarite),
     tab(Profondeur),
-    format("feuille a~w : ~w [polarite=~w]~n", [Index, Formule, Polarite]).
+    format("feuille a~w : ~w  [polarite=~w]~n", [Index, Formule, Polarite]).
 
-afficher_arbre(noeud(Type, Formule, Polarite, Index,
-                    fils(TypeSecondaire1, Gauche),
-                    fils(TypeSecondaire2, Droite)), Profondeur) :-
+afficher_arbre(noeud(Etiquette, Gauche, Droit), Profondeur) :-
+    etiq_index(Etiquette, Index),
+    etiq_formule(Etiquette, Formule),
+    etiq_type_principal(Etiquette, Type),
+    etiq_polarite(Etiquette, Polarite),
+    etiq_type_secondaire1(Etiquette, TypeSecondaire1),
+    etiq_type_secondaire2(Etiquette, TypeSecondaire2),
     tab(Profondeur),
-    format("noeud  a~w : ~w  [type=~w, polarite=~w]~n", [Index, Formule, Type, Polarite]),
+    format("noeud a~w : ~w  [type=~w, polarite=~w]~n", [Index, Formule, Type, Polarite]),
     Profondeur1 is Profondeur + 4,
     tab(Profondeur1), format("[~w]~n", [TypeSecondaire1]),
     afficher_arbre(Gauche, Profondeur1),
     tab(Profondeur1), format("[~w]~n", [TypeSecondaire2]),
-    afficher_arbre(Droite, Profondeur1).
+    afficher_arbre(Droit, Profondeur1).
 
 % Exemple du cours :
 ?- construire_arbre((p impl q) impl ((q impl r) impl (p impl r)), Arbre),
