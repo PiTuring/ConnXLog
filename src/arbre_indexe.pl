@@ -16,8 +16,8 @@
 % ============================================================================
 
 :- module(arbre_indexe, [
-    construire_arbre/2,
-    afficher_arbre/1,
+    generer_arbre_indexe/2,
+    afficher_arbre_indexe/1,
     etiq_type_principal/2,
     etiq_type_secondaire1/2,
     etiq_type_secondaire2/2,
@@ -114,30 +114,32 @@ etiqueter(A, Polarite, Index, IndexOut, feuille(etiq_formule(atome, none, none, 
 
 % ============================================================================
 % CONSTRUCTION ARBRE
-%   construire_arbre(+Formule, -Arbre)
+%   generer_arbre_indexe(+Formule, -Arbre)
 %   Polarite initiale = 0 (pour l'instant comme TD avec tautologie)
 %   Index initial = 0
 % ============================================================================
 
-construire_arbre(Formule, Arbre) :-
+generer_arbre_indexe(Formule, Arbre) :-
     etiqueter(Formule, 0, 0, _, Arbre).
 
 % ============================================================================
 % AFFICHAGE ARBRE (pour debug)
-%   afficher_arbre(+Arbre)
+%   afficher_arbre_indexe(+Arbre)
 % ============================================================================
 
-afficher_arbre(Arbre) :-
-    afficher_arbre(Arbre, 0).
+afficher_arbre_indexe(Arbre) :-
+    afficher_arbre_indexe(Arbre, 0).
 
-afficher_arbre(feuille(Etiquette), Profondeur) :-
+afficher_arbre_indexe(feuille(Etiquette), Profondeur) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_polarite(Etiquette, Polarite),
     tab(Profondeur),
-    format("feuille a~w : ~w  [polarite=~w]~n", [Index, Formule, Polarite]).
+    format("feuille a~w : ", [Index]),
+    ecrire_formule(Formule),
+    format("  [polarite=~w]~n", [Polarite]).
 
-afficher_arbre(noeud(Etiquette, Gauche, Droit), Profondeur) :-
+afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Profondeur) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_type_principal(Etiquette, Type),
@@ -145,13 +147,11 @@ afficher_arbre(noeud(Etiquette, Gauche, Droit), Profondeur) :-
     etiq_type_secondaire1(Etiquette, TypeSecondaire1),
     etiq_type_secondaire2(Etiquette, TypeSecondaire2),
     tab(Profondeur),
-    format("noeud a~w : ~w  [type=~w, polarite=~w]~n", [Index, Formule, Type, Polarite]),
+    format("noeud a~w : ", [Index]),
+    ecrire_formule(Formule),
+    format("  [type=~w, polarite=~w]~n", [Type, Polarite]),
     Profondeur1 is Profondeur + 4,
     tab(Profondeur1), format("[~w]~n", [TypeSecondaire1]),
-    afficher_arbre(Gauche, Profondeur1),
+    afficher_arbre_indexe(Gauche, Profondeur1),
     tab(Profondeur1), format("[~w]~n", [TypeSecondaire2]),
-    afficher_arbre(Droit, Profondeur1).
-
-% Exemple du cours :
-?- construire_arbre((p impl q) impl ((q impl r) impl (p impl r)), Arbre),
-   afficher_arbre(Arbre).
+    afficher_arbre_indexe(Droit, Profondeur1).
