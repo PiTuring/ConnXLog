@@ -1,20 +1,5 @@
 % arbre_indexe.pl
 
-% ============================================================================
-% Construction de l'arbre syntaxique indexé 
-%
-% Etiquette des noeuds :
-%       etiq_formule(TypePrincipal, TypeSec1, TypeSec2, Formule, Polarite, Index)
-%
-% Etiquette des feuilles :
-%       etiq_formule(atome, none, none, Formule, Polarite, Index)
-%
-%       TypePrincipal  : alpha | beta | atome
-%       TypeSecondaire : alpha1 | alpha2 | beta1 | beta2 | none
-%       Polarite       : 1 (vrai) | 0 (faux)
-%       Index          : entier, numérotation en parcours préordre
-% ============================================================================
-
 :- module(arbre_indexe, [
     generer_arbre_indexe/2,
 
@@ -29,9 +14,23 @@
     etiq_polarite/2,
     etiq_index/2
 ]).
-
 :- include(operateurs).
 :- use_module(arbre).
+
+% ============================================================================
+% Construction de l'arbre syntaxique indexé 
+%
+% Etiquette des noeuds :
+%       etiq_formule(TypePrincipal, TypeSec1, TypeSec2, Formule, Polarite, Index)
+%
+% Etiquette des feuilles :
+%       etiq_formule(atome, none, none, Formule, Polarite, Index)
+%
+%       TypePrincipal  : alpha | beta | atome
+%       TypeSecondaire : alpha1 | alpha2 | beta1 | beta2 | none
+%       Polarite       : 1 (vrai) | 0 (faux)
+%       Index          : entier, numérotation en parcours préordre
+% ============================================================================
 
 % Accesseurs ------------------------------------------------------------------
 

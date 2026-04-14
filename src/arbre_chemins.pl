@@ -1,5 +1,13 @@
 % arbre_chemins.pl
 
+:- module(arbre_chemins, [
+    generer_arbre_chemins/2,
+    afficher_arbre_chemins/1
+]).
+:- include(operateurs).
+:- use_module(arbre).
+:- use_module(arbre_indexe).
+
 % ============================================================================
 % Construction de l'arbre des chemins à parti de l'arbre indexé.
 %
@@ -12,14 +20,6 @@
 %       etiq_chemin_final(ListeFeuilles)
 %             ListeFeuilles  : liste des feuilles atomiques du chemin
 % ============================================================================
-
-:- module(arbre_chemins, [
-    generer_arbre_chemins/2,
-    afficher_arbre_chemins/1
-]).
-
-:- use_module(arbre).
-:- use_module(arbre_indexe).
 
 % ============================================================================
 % generer_arbre_chemins(+ArbreIndexe, -ArbreChemins)
@@ -83,12 +83,14 @@ afficher_arbre_chemins(feuille(etiq_chemin_final(Feuilles)), Profondeur) :-
       afficher_feuilles(Feuilles),
       nl.
 
-afficher_arbre_chemins(noeud(etiq_chemin(Noeud, _), FilsGauche, FilsDroit), Profondeur) :-
+afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin), FilsGauche, FilsDroit), Profondeur) :-
       noeud_etiquette(Noeud, Etiquette),
       etiq_index(Etiquette, Index),
       etiq_type_principal(Etiquette, Type),
       tab(Profondeur),
-      format("chemin a~w [~w]~n", [Index, Type]),
+      write('{'),
+      afficher_chemin(Chemin),
+      write('}'), nl,
       Profondeur1 is Profondeur + 4,
       afficher_arbre_chemins(FilsGauche, Profondeur1),
       (
@@ -97,8 +99,23 @@ afficher_arbre_chemins(noeud(etiq_chemin(Noeud, _), FilsGauche, FilsDroit), Prof
         true
       ).
 
-afficher_feuilles([]).
+afficher_chemin([]).
+afficher_chemin([H | Reste]) :-
+      (
+        est_noeud(H) -> noeud_etiquette(H, Etiquette),
+        etiq_index(Etiquette, Index)
+        ; 
+        feuille_etiquette(H, Etiquette),
+        etiq_index(Etiquette, Index)
+      ), 
+      (
+        Reste \= [] -> format("a~w, ", [Index])
+        ;
+        format("a~w", [Index])
+      ),
+      afficher_chemin(Reste).
 
+afficher_feuilles([]).
 afficher_feuilles([F | Reste]) :-
       feuille_etiquette(F, Etiquette),
       etiq_index(Etiquette, Index),

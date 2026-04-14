@@ -1,9 +1,7 @@
 % main.pl
 
 :- module(main, [verifier/1]).
-
 :- include(operateurs).
-
 :- use_module(arbre_indexe).
 :- use_module(arbre_chemins).
 
