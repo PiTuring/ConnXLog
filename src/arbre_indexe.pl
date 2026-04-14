@@ -17,8 +17,11 @@
 
 :- module(arbre_indexe, [
     generer_arbre_indexe/2,
+
     afficher_arbre_indexe/1,
     afficher_arbre_indexe/3,
+    afficher_arbre_indexe/4,
+
     etiq_type_principal/2,
     etiq_type_secondaire1/2,
     etiq_type_secondaire2/2,
@@ -107,7 +110,6 @@ etiqueter(A impl B, 1, IndexIn, IndexOut,
 
 % Atomes (feuilles) ------------------------------------------------------------
 
-
 % Si A est un atome, alors le résultat est une feuille.
 etiqueter(A, Polarite, Index, IndexOut, feuille(etiq_formule(atome, none, none, A, Polarite, Index))) :-
     atom(A),
@@ -129,34 +131,48 @@ generer_arbre_indexe(Formule, Arbre) :-
 % ============================================================================
 
 afficher_arbre_indexe(Arbre) :-
-    afficher_arbre_indexe(Arbre, 0, none).
+    afficher_arbre_indexe(Arbre, '', '').
 
-afficher_arbre_indexe(feuille(Etiquette), Profondeur, SousType) :-
+afficher_arbre_indexe(feuille(Etiquette), Prefixe, _) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_polarite(Etiquette, Polarite),
-    tab(Profondeur),
+    write(Prefixe),
     ecrire_formule(Formule),
-    format("  [a~w, ~w, ", [Index, Polarite]),
-    ecrire_type(none),
-    write(", "),
+    format("  [a~w, ~w, _, ", [Index, Polarite]),
+    ecrire_type('_'),
+    write(']'), nl.
+
+afficher_arbre_indexe(feuille(Etiquette), Prefixe, _, SousType) :-
+    etiq_index(Etiquette, Index),
+    etiq_formule(Etiquette, Formule),
+    etiq_polarite(Etiquette, Polarite),
+    write(Prefixe),
+    ecrire_formule(Formule),
+    format("  [a~w, ~w, _, ", [Index, Polarite]),
     ecrire_type(SousType),
     write(']'), nl.
 
-afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Profondeur, SousType) :-
+afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Prefixe, PrefixeSuite) :-
+    afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Prefixe, PrefixeSuite, none).
+
+afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Prefixe, PrefixeSuite, SousType) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_type_principal(Etiquette, Type),
     etiq_polarite(Etiquette, Polarite),
     etiq_type_secondaire1(Etiquette, TypeSecondaire1),
     etiq_type_secondaire2(Etiquette, TypeSecondaire2),
-    tab(Profondeur),
+    write(Prefixe),
     ecrire_formule(Formule),
     format("  [a~w, ~w, ", [Index, Polarite]),
     ecrire_type(Type),
     write(', '),
     ecrire_type(SousType),
     write(']'), nl,
-    Profondeur1 is Profondeur + 4,
-    afficher_arbre_indexe(Gauche, Profondeur1, TypeSecondaire1),
-    afficher_arbre_indexe(Droit,  Profondeur1, TypeSecondaire2).
+    atom_concat(PrefixeSuite, '├── ', PrefixeGauche),
+    atom_concat(PrefixeSuite, '│   ', PrefixeSuiteGauche),
+    atom_concat(PrefixeSuite, '└── ', PrefixeDroit),
+    atom_concat(PrefixeSuite, '    ', PrefixeSuiteDroit),
+    afficher_arbre_indexe(Gauche, PrefixeGauche, PrefixeSuiteGauche, TypeSecondaire1),
+    afficher_arbre_indexe(Droit,  PrefixeDroit, PrefixeSuiteDroit, TypeSecondaire2).

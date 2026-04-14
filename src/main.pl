@@ -12,7 +12,9 @@
 % ============================================================================
 
 verifier(Formule) :-
-      format("~n=== Formule : ~w ===~n~n", [Formule]),
+      write('=== Formule : '),
+      ecrire_formule(Formule),
+      write(' ==='), nl,
       generer_arbre_indexe(Formule, ArbreIndexe),
       format("--- Arbre syntaxique indexé ---~n"),
       afficher_arbre_indexe(ArbreIndexe),
