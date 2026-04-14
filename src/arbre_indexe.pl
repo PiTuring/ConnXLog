@@ -129,7 +129,7 @@ generer_arbre_indexe(Formule, Arbre) :-
 % ============================================================================
 
 afficher_arbre_indexe(Arbre) :-
-    afficher_arbre_indexe(Arbre, 0, '_').
+    afficher_arbre_indexe(Arbre, 0, none).
 
 afficher_arbre_indexe(feuille(Etiquette), Profondeur, SousType) :-
     etiq_index(Etiquette, Index),
@@ -137,7 +137,11 @@ afficher_arbre_indexe(feuille(Etiquette), Profondeur, SousType) :-
     etiq_polarite(Etiquette, Polarite),
     tab(Profondeur),
     ecrire_formule(Formule),
-    format("  [position=a~w, polarite=~w, type=_, sous_type=~w]~n", [Index, Polarite, SousType]).
+    format("  [a~w, ~w, ", [Index, Polarite]),
+    ecrire_type(none),
+    write(", "),
+    ecrire_type(SousType),
+    write(']'), nl.
 
 afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Profondeur, SousType) :-
     etiq_index(Etiquette, Index),
@@ -148,7 +152,11 @@ afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Profondeur, SousType) :-
     etiq_type_secondaire2(Etiquette, TypeSecondaire2),
     tab(Profondeur),
     ecrire_formule(Formule),
-    format("  [position=a~w, polarite=~w, type=~w, sous_type=~w]~n", [Index, Polarite, Type, SousType]),
+    format("  [a~w, ~w, ", [Index, Polarite]),
+    ecrire_type(Type),
+    write(', '),
+    ecrire_type(SousType),
+    write(']'), nl,
     Profondeur1 is Profondeur + 4,
-    afficher_arbre_indexe(Gauche, Profondeur1, TypeSecondaire1), 
-    afficher_arbre_indexe(Droit,  Profondeur1, TypeSecondaire2). 
+    afficher_arbre_indexe(Gauche, Profondeur1, TypeSecondaire1),
+    afficher_arbre_indexe(Droit,  Profondeur1, TypeSecondaire2).
