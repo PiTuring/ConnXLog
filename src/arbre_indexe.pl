@@ -18,6 +18,7 @@
 :- module(arbre_indexe, [
     generer_arbre_indexe/2,
     afficher_arbre_indexe/1,
+    afficher_arbre_indexe/3,
     etiq_type_principal/2,
     etiq_type_secondaire1/2,
     etiq_type_secondaire2/2,
@@ -128,18 +129,17 @@ generer_arbre_indexe(Formule, Arbre) :-
 % ============================================================================
 
 afficher_arbre_indexe(Arbre) :-
-    afficher_arbre_indexe(Arbre, 0).
+    afficher_arbre_indexe(Arbre, 0, '_').
 
-afficher_arbre_indexe(feuille(Etiquette), Profondeur) :-
+afficher_arbre_indexe(feuille(Etiquette), Profondeur, SousType) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_polarite(Etiquette, Polarite),
     tab(Profondeur),
-    format("feuille a~w : ", [Index]),
     ecrire_formule(Formule),
-    format("  [polarite=~w]~n", [Polarite]).
+    format("  [position=a~w, polarite=~w, type=_, sous_type=~w]~n", [Index, Polarite, SousType]).
 
-afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Profondeur) :-
+afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Profondeur, SousType) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_type_principal(Etiquette, Type),
@@ -147,11 +147,8 @@ afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Profondeur) :-
     etiq_type_secondaire1(Etiquette, TypeSecondaire1),
     etiq_type_secondaire2(Etiquette, TypeSecondaire2),
     tab(Profondeur),
-    format("noeud a~w : ", [Index]),
     ecrire_formule(Formule),
-    format("  [type=~w, polarite=~w]~n", [Type, Polarite]),
+    format("  [position=a~w, polarite=~w, type=~w, sous_type=~w]~n", [Index, Polarite, Type, SousType]),
     Profondeur1 is Profondeur + 4,
-    tab(Profondeur1), format("[~w]~n", [TypeSecondaire1]),
-    afficher_arbre_indexe(Gauche, Profondeur1),
-    tab(Profondeur1), format("[~w]~n", [TypeSecondaire2]),
-    afficher_arbre_indexe(Droit, Profondeur1).
+    afficher_arbre_indexe(Gauche, Profondeur1, TypeSecondaire1), 
+    afficher_arbre_indexe(Droit,  Profondeur1, TypeSecondaire2). 
