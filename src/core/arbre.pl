@@ -1,5 +1,16 @@
 % core/arbre.pl
 
+:- module(arbre, [
+  est_feuille/1,
+  est_noeud/1,
+  est_noeud_unaire/1,
+  est_noeud_binaire/1,
+  noeud_etiquette/2,
+  noeud_gauche/2,
+  noeud_droit/2,
+  feuille_etiquette/2
+]).
+
 % ============================================================================
 % Structure d'arbre binaire partagée entre l'arbre syntaxique 
 % et l'arbre des chemins
@@ -13,19 +24,8 @@
 %                                     (alpha dans l'arbre des chemins).
 % ============================================================================
 
-:- module(arbre, [
-  est_feuille/1,
-  est_noeud/1,
-  est_noeud_unaire/1,
-  est_noeud_binaire/1,
-  noeud_etiquette/2,
-  noeud_gauche/2,
-  noeud_droit/2,
-  feuille_etiquette/2
-]).
-
 % Prédicats est_xxx ----------------------------------------------------------
-
+ 
 est_feuille(feuille(_)).
 est_noeud(noeud(_, _, _)).
 est_noeud_unaire(noeud(_, _, nil)). % On vérifie si FilsDroit est nil

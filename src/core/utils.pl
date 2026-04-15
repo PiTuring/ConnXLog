@@ -1,13 +1,25 @@
 % core/utils.pl
 
-% ============================================================
-% Déclaration des opérateurs logiques propositionnels
-% ============================================================
+% ============================================================================
+% Contients tous les prédicats utiles à la gestion de 
+% l'affichage ou à la déclaration des éléments globaux 
+% du programme :
+%   - Connecteurs
+%   - Types des règles appliquées
+%   - Gestion de la trace active ou non
+% ============================================================================
 
+% Connecteurs ----------------------------------------------------------------
+
+% ============================================================================
+% Déclaration des opérateurs logiques propositionnels
+% ============================================================================
 :- op(750, fy,  non).
 :- op(800, xfy, et).
 :- op(850, xfy, ou).
 :- op(900, xfy, impl).
+
+% Affichage --------------------------------------------------
 
 % ============================================================================
 % ecrire_formule(+Formule)
