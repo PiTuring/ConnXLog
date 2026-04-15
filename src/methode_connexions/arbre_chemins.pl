@@ -1,11 +1,11 @@
-% arbre_chemins.pl
+% methode_connexions/arbre_chemins.pl
 
 :- module(arbre_chemins, [
     generer_arbre_chemins/2,
     afficher_arbre_chemins/1
 ]).
-:- include(operateurs).
-:- use_module(arbre).
+:- include('../core/utils').
+:- use_module('../core/arbre').
 :- use_module(arbre_indexe).
 
 % ============================================================================

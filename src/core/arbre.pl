@@ -1,4 +1,4 @@
-% arbre.pl
+% core/arbre.pl
 
 % ============================================================================
 % Structure d'arbre binaire partagée entre l'arbre syntaxique 

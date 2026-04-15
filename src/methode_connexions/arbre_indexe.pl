@@ -1,4 +1,4 @@
-% arbre_indexe.pl
+% methode_connexions/arbre_indexe.pl
 
 :- module(arbre_indexe, [
     generer_arbre_indexe/2,
@@ -14,8 +14,8 @@
     etiq_polarite/2,
     etiq_index/2
 ]).
-:- include(operateurs).
-:- use_module(arbre).
+:- include('../core/utils').
+:- use_module('../core/arbre').
 
 % ============================================================================
 % Construction de l'arbre syntaxique indexé 
