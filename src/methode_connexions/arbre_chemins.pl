@@ -75,28 +75,36 @@ premier_noeud([H | T], Noeud, [H | Reste]) :-
 % ============================================================================
 
 afficher_arbre_chemins(Arbre) :-
-      afficher_arbre_chemins(Arbre, 0).
+      afficher_arbre_chemins(Arbre, '', '').
 
-afficher_arbre_chemins(feuille(etiq_chemin_final(Feuilles)), Profondeur) :-
-      tab(Profondeur),
+afficher_arbre_chemins(feuille(etiq_chemin_final(Feuilles)), Prefixe, _) :-
+      write(Prefixe),
       format("chemin final : "),
       afficher_feuilles(Feuilles),
       nl.
 
-afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin), FilsGauche, FilsDroit), Profondeur) :-
+afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin), FilsGauche, FilsDroit), Prefixe, PrefixeSuite) :-
       noeud_etiquette(Noeud, Etiquette),
       etiq_index(Etiquette, Index),
       etiq_type_principal(Etiquette, Type),
-      tab(Profondeur),
+      write(Prefixe),
       write('{'),
       afficher_chemin(Chemin),
       write('}'), nl,
-      Profondeur1 is Profondeur + 4,
-      afficher_arbre_chemins(FilsGauche, Profondeur1),
-      (
-        FilsDroit \= nil -> afficher_arbre_chemins(FilsDroit, Profondeur1) 
-        ; 
-        true
+
+      ( FilsDroit \= nil ->
+            atom_concat(PrefixeSuite, '├── ', PrefixeGauche),
+            atom_concat(PrefixeSuite, '│   ', PrefixeSuiteGauche),
+            atom_concat(PrefixeSuite, '└── ', PrefixeDroit),
+            atom_concat(PrefixeSuite, '    ', PrefixeSuiteDroit),
+
+            afficher_arbre_chemins(FilsGauche, PrefixeGauche, PrefixeSuiteGauche),
+            afficher_arbre_chemins(FilsDroit, PrefixeDroit, PrefixeSuiteDroit)
+      ;
+            atom_concat(PrefixeSuite, '└── ', PrefixeUnique),
+            atom_concat(PrefixeSuite, '    ', PrefixeSuiteUnique),
+
+            afficher_arbre_chemins(FilsGauche, PrefixeUnique, PrefixeSuiteUnique)
       ).
 
 afficher_chemin([]).
