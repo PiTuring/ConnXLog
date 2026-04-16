@@ -82,5 +82,6 @@ trace_verif(Formule) :-
       set_echo, % Active la trace par echo/1
       verifier(Formule).
 
-% Exemple du cours :
-?- verif((p impl q) impl ((q impl r) impl (p impl r))).
+% Tests avec trace de l'exemple du cours et du TD :
+?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
+?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
