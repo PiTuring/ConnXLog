@@ -25,14 +25,12 @@
 % ============================================================================
 
 % Prédicats est_xxx ----------------------------------------------------------
- 
 est_feuille(feuille(_)).
 est_noeud(noeud(_, _, _)).
 est_noeud_unaire(noeud(_, _, nil)). % On vérifie si FilsDroit est nil
 est_noeud_binaire(noeud(_, G, D)) :- G \= nil, D \= nil. % On vérifie que les deux fils ne soient pas nil
 
 % Accesseurs ------------------------------------------------------------------
-
 noeud_etiquette(noeud(E, _, _), E).
 noeud_gauche(noeud(_, G, _), G).
 noeud_droit(noeud(_, _, D), D).

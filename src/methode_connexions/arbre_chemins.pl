@@ -24,7 +24,6 @@
 % ============================================================================
 % generer_arbre_chemins(+ArbreIndexe, -ArbreChemins)
 % ============================================================================
-
 generer_arbre_chemins(ArbreIndexe, ArbreChemins) :-
       developper([ArbreIndexe], ArbreChemins).
 
@@ -33,11 +32,9 @@ generer_arbre_chemins(ArbreIndexe, ArbreChemins) :-
 %
 % Ensemble : liste de noeuds issus de l'arbre indexé
 % ============================================================================
-
 % Cas de base -> tous les éléments sont des feuilles
 developper(Ensemble, feuille(etiq_chemin_final(Ensemble))) :-
       maplist(est_feuille, Ensemble), !.
-
 % Récursion -> stratégie : on traite le premier noeud
 developper(Ensemble, ArbreChemins) :-
       premier_noeud(Ensemble, Noeud, EnsembleSansNoeud),
@@ -47,14 +44,14 @@ developper(Ensemble, ArbreChemins) :-
       noeud_droit(Noeud, FilsDroit),
       !,
       (
-        TypePrincipal = alpha ->
-            NouvelEnsemble = [FilsGauche, FilsDroit | EnsembleSansNoeud],
-            developper(NouvelEnsemble, SousArbre),
-            ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbre, nil)
-        ; % beta
-            developper([FilsGauche | EnsembleSansNoeud], SousArbreGauche),
-            developper([FilsDroit | EnsembleSansNoeud], SousArbreDroit),
-            ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbreGauche, SousArbreDroit)
+            TypePrincipal = alpha ->
+                  NouvelEnsemble = [FilsGauche, FilsDroit | EnsembleSansNoeud],
+                  developper(NouvelEnsemble, SousArbre),
+                  ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbre, nil)
+            ; % beta
+                  developper([FilsGauche | EnsembleSansNoeud], SousArbreGauche),
+                  developper([FilsDroit | EnsembleSansNoeud], SousArbreDroit),
+                  ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbreGauche, SousArbreDroit)
       ).
 
 % ============================================================================
@@ -62,10 +59,8 @@ developper(Ensemble, ArbreChemins) :-
 %
 % Séléctionne le premier noeud non-feuille
 % ============================================================================
-
 premier_noeud([H | T], H, T) :-
       est_noeud(H), !.
-
 premier_noeud([H | T], Noeud, [H | Reste]) :-
       est_feuille(H),
       premier_noeud(T, Noeud, Reste).
@@ -73,16 +68,13 @@ premier_noeud([H | T], Noeud, [H | Reste]) :-
 % ============================================================================
 % afficher_arbre_chemins(+ArbreChemins)
 % ============================================================================
-
 afficher_arbre_chemins(Arbre) :-
       afficher_arbre_chemins(Arbre, '', '').
-
 afficher_arbre_chemins(feuille(etiq_chemin_final(Feuilles)), Prefixe, _) :-
       write(Prefixe),
       format("chemin final : "),
       afficher_feuilles(Feuilles),
       nl.
-
 afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin), FilsGauche, FilsDroit), Prefixe, PrefixeSuite) :-
       noeud_etiquette(Noeud, Etiquette),
       etiq_index(Etiquette, Index),
@@ -107,22 +99,28 @@ afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin), FilsGauche, FilsDroit),
             afficher_arbre_chemins(FilsGauche, PrefixeUnique, PrefixeSuiteUnique)
       ).
 
+% ============================================================================
+% afficher_chemin(+Chemin)
+% ============================================================================    
 afficher_chemin([]).
 afficher_chemin([H | Reste]) :-
       (
-        est_noeud(H) -> noeud_etiquette(H, Etiquette),
-        etiq_index(Etiquette, Index)
-        ; 
-        feuille_etiquette(H, Etiquette),
-        etiq_index(Etiquette, Index)
+            est_noeud(H) -> noeud_etiquette(H, Etiquette),
+                  etiq_index(Etiquette, Index)
+            ; 
+                  feuille_etiquette(H, Etiquette),
+                  etiq_index(Etiquette, Index)
       ), 
       (
-        Reste \= [] -> format("a~w, ", [Index])
-        ;
-        format("a~w", [Index])
+            Reste \= [] -> format("a~w, ", [Index])
+            ;
+                  format("a~w", [Index])
       ),
       afficher_chemin(Reste).
 
+% ============================================================================
+% afficher_feuilles(+Feuilles)
+% ============================================================================
 afficher_feuilles([]).
 afficher_feuilles([F | Reste]) :-
       feuille_etiquette(F, Etiquette),
