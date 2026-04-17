@@ -19,6 +19,12 @@
 :- op(850, xfy, ou).
 :- op(900, xfy, impl).
 
+% ============================================================================
+% Déclaration des opérateurs en logique des prédicats
+% ============================================================================
+:- op(700, fy, pt).
+:- op(700, fy, ie).
+
 % Affichage --------------------------------------------------
 
 % ============================================================================
@@ -38,6 +44,13 @@ ecrire_formule(non A) :-
 ecrire_formule(A) :-
     atom(A), write(A).
 
+% En LPO
+
+ecrire_formule(pt A) :-
+    write('∀', ecrire_formule(A)).
+ecrire_formule(pt A) :-
+    write('∃', ecrire_formule(A)).
+
 % ============================================================================
 % ecrire_type(+Type)
 %
@@ -52,6 +65,12 @@ ecrire_type(beta1)  :- write('β1').
 ecrire_type(beta2)  :- write('β2').
 ecrire_type(none)   :- write('_').
 
+% En LPO
+
+ecrire_type(gamma) :- write('γ')
+ecrire_type(gamma1) :- write('γ1')
+ecrire_type(delta) :- write('ẟ')
+ecrire_type(delta1) :- write('ẟ1')
 
 % ============================================================================
 % Prédicats d'affichage ancien TP
