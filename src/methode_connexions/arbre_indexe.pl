@@ -26,8 +26,8 @@
 % Etiquette des feuilles :
 %       etiq_formule(atome, none, none, Formule, Polarite, Index)
 %
-%       TypePrincipal  : alpha | beta | atome
-%       TypeSecondaire : alpha1 | alpha2 | beta1 | beta2 | none
+%       TypePrincipal  : alpha | beta | gamma | delta | atome
+%       TypeSecondaire : alpha1 | alpha2 | beta1 | beta2 | gamma1 | delta1 | none
 %       Polarite       : 1 (vrai) | 0 (faux)
 %       Index          : entier, numérotation en parcours préordre
 % ============================================================================
@@ -113,6 +113,35 @@ etiqueter(A impl B, 1, IndexIn, IndexOut,
 etiqueter(A, Polarite, Index, IndexOut, feuille(etiq_formule(atome, none, none, A, Polarite, Index))) :-
     atom(A),
     IndexOut is Index + 1.
+
+
+% Règles Gamma ---------------------------------------------------------------
+
+% Règle (pt A, 1) -> fils unique (A, 1, gamma1)
+etiqueter(pt A, 1, IndexIn, IndexOut,
+    noeud(etiq_formule(gamma, gamma1, none, pt A, 1, IndexIn), ArbreA, nil)) :-
+    Index1 is IndexIn + 1,
+    etiqueter(A, 1, Index1, IndexOut, ArbreA).
+
+% Règle (il A, 0) -> fils unique (A, 0, gamma1)
+etiqueter(ie A, 0, IndexIn, IndexOut,
+    noeud(etiq_formule(gamma, gamma1, none, ie A, 0, IndexIn), ArbreA, nil)) :-
+    Index1 is IndexIn + 1,
+    etiqueter(A, 0, Index1, IndexOut, ArbreA).
+
+% Règles Delta ---------------------------------------------------------------
+
+% Règle (pt A, O) -> fils unique (A, 0, delta1)
+etiqueter(pt A, 0, IndexIn, IndexOut,
+    noeud(etiq_formule(delta, delta1, none, pt A, 0, IndexIn), ArbreA, nil)) :-
+    Index1 is IndexIn + 1,
+    etiqueter(A, 0, Index1, IndexOut, ArbreA).
+
+% Règle (ie A, 1) -> fils unique (A, 1, delta1)
+etiqueter(ie A, 1, IndexIn, IndexOut,
+    noeud(etiq_formule(delta, delta1, none, ie A, 1, IndexIn), ArbreA, nil)) :-
+    Index1 is IndexIn + 1,
+    etiqueter(A, 0, Index1, IndexOut, ArbreA).
 
 % ============================================================================
 % CONSTRUCTION ARBRE

@@ -41,15 +41,12 @@ ecrire_formule(A ou B) :-
     write('('), ecrire_formule(A), write(' ∨ '), ecrire_formule(B), write(')').
 ecrire_formule(non A) :-
     write('¬'), ecrire_formule(A).
+ecrire_formule(pt A) :-
+    write('∀'), ecrire_formule(A).
+ecrire_formule(ie A) :-
+    write('∃'), ecrire_formule(A).
 ecrire_formule(A) :-
-    atom(A), write(A).
-
-% En LPO
-
-ecrire_formule(pt A) :-
-    write('∀', ecrire_formule(A)).
-ecrire_formule(pt A) :-
-    write('∃', ecrire_formule(A)).
+    write(A).
 
 % ============================================================================
 % ecrire_type(+Type)
@@ -67,10 +64,10 @@ ecrire_type(none)   :- write('_').
 
 % En LPO
 
-ecrire_type(gamma) :- write('γ')
-ecrire_type(gamma1) :- write('γ1')
-ecrire_type(delta) :- write('ẟ')
-ecrire_type(delta1) :- write('ẟ1')
+ecrire_type(gamma) :- write('γ').
+ecrire_type(gamma1) :- write('γ1').
+ecrire_type(delta) :- write('ẟ').
+ecrire_type(delta1) :- write('ẟ1').
 
 % ============================================================================
 % Prédicats d'affichage ancien TP
