@@ -19,6 +19,7 @@
 
 % lpo
 :- use_module(methode_connexions/lpo/arbre_indexe, []).
+:- use_module(methode_connexions/lpo/arbre_chemins, []).
 
 
 % ============================================================================
@@ -102,6 +103,12 @@ verifier(Formule, lpo) :-
       echo_nl,
       echo("--- Arbre des chemins ---"),
       echo_nl,
+      arbre_chemins_lpo:generer_arbre_chemins(ArbreIndexe, ArbreChemins),
+      (
+            echo_on -> arbre_chemins_lpo:afficher_arbre_chemins(ArbreChemins)
+            ;
+            true
+      ),
       
 
       % Etape 3 : Recherche de connexions + Conclusion
@@ -143,6 +150,6 @@ trace_verif(Formule, Logique) :-
 %?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
 % lpo
 ?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
-?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
-?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
-?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
+%?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
+%?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
+%?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD

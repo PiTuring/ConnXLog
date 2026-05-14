@@ -1,6 +1,6 @@
 % methode_connexions/lpo/arbre_chemins.pl
 
-:- module(arbre_chemins, [
+:- module(arbre_chemins_lpo, [
     generer_arbre_chemins/2,
     afficher_arbre_chemins/1
 ]).
@@ -50,10 +50,16 @@ developper(Ensemble, ArbreChemins) :-
                   NouvelEnsemble = [FilsGauche, FilsDroit | EnsembleSansNoeud],
                   developper(NouvelEnsemble, SousArbre),
                   ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbre, nil)
-            ; % beta
+            ; 
+            TypePrincipal = beta ->
                   developper([FilsGauche | EnsembleSansNoeud], SousArbreGauche),
                   developper([FilsDroit | EnsembleSansNoeud], SousArbreDroit),
                   ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbreGauche, SousArbreDroit)
+            ;     % pour delta et gamma pas besoin des regles du cours -> informatique donc pas de redondence visuelle
+                  developper([FilsGauche | EnsembleSansNoeud], SousArbre),
+                  ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbre, nil)
+
+                              
       ).
 
 % ============================================================================
