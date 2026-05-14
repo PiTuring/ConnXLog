@@ -22,8 +22,39 @@
 % ============================================================================
 % Déclaration des opérateurs en logique des prédicats
 % ============================================================================
-:- op(700, fy, pt).
-:- op(700, fy, ie).
+:- op(950, xfy, pt).  
+:- op(950, xfy, ie).
+
+% ============================================================================
+% substituer(+Terme, +Ancien, +Nouveau, -Resultat)
+%
+% Remplace toutes les occurrences de Ancien par Nouveau dans Terme.
+% ============================================================================
+substituer(Ancien, Ancien, Nouveau, Nouveau) :- !.
+substituer(Terme, _, _, Terme) :- atomic(Terme), !.
+substituer(Terme, Ancien, Nouveau, Resultat) :-
+    compound(Terme),
+    Terme =.. [F | Args],
+    maplist([Arg, ArgSubst]>>(substituer(Arg, Ancien, Nouveau, ArgSubst)), Args, ArgsSubst),
+    Resultat =.. [F | ArgsSubst].
+
+% ── Littéraux (feuilles) ─────────────────────────────────────────────────────
+% Un littéral est :
+%   - un atome propositionnel : p, q, r
+%   - un prédicat appliqué    : p(x), q(a,b), p(f(y))
+connecteur(et).   
+connecteur(ou).   
+connecteur(impl).
+connecteur(non).  
+connecteur(pt).   
+connecteur(ie).
+
+est_litteral(A) :-
+    atom(A), !.
+est_litteral(A) :-
+    compound(A),
+    functor(A, Foncteur, _),
+    \+ connecteur(Foncteur).
 
 % Affichage --------------------------------------------------
 
@@ -41,11 +72,13 @@ ecrire_formule(A ou B) :-
     write('('), ecrire_formule(A), write(' ∨ '), ecrire_formule(B), write(')').
 ecrire_formule(non A) :-
     write('¬'), ecrire_formule(A).
-ecrire_formule(pt A) :-
-    write('∀'), ecrire_formule(A).
-ecrire_formule(ie A) :-
-    write('∃'), ecrire_formule(A).
+% sur-couche LPO :
+ecrire_formule(X pt A) :-
+    write('∀'), write(X), write('.'), ecrire_formule(A).
+ecrire_formule(X ie A) :-
+    write('∃'), write(X), write('.'), ecrire_formule(A).
 ecrire_formule(A) :-
+    est_litteral(A), !,
     write(A).
 
 % ============================================================================
@@ -61,13 +94,11 @@ ecrire_type(alpha2) :- write('α2').
 ecrire_type(beta1)  :- write('β1').
 ecrire_type(beta2)  :- write('β2').
 ecrire_type(none)   :- write('_').
-
-% En LPO
-
+% sur-couche LPO :
 ecrire_type(gamma) :- write('γ').
-ecrire_type(gamma1) :- write('γ1').
+ecrire_type(gamma0) :- write('γ0').
 ecrire_type(delta) :- write('ẟ').
-ecrire_type(delta1) :- write('ẟ1').
+ecrire_type(delta0) :- write('ẟ0').
 
 % ============================================================================
 % Prédicats d'affichage ancien TP

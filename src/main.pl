@@ -1,18 +1,34 @@
 % main.pl
 
-:- module(main, [verifier/1]).
+:- module(main, [
+    verifier/2,
+
+    verif/1,        
+    verif/2,
+
+    trace_verif/1,  
+    trace_verif/2
+]).
 
 :- include(core/utils).
-:- use_module(methode_connexions/arbre_indexe).
-:- use_module(methode_connexions/arbre_chemins).
-:- use_module(methode_connexions/recherche_connexions).
+
+% prop
+:- use_module(methode_connexions/prop/arbre_indexe).
+:- use_module(methode_connexions/prop/arbre_chemins).
+:- use_module(methode_connexions/prop/recherche_connexions).
+
+% lpo
+:- use_module(methode_connexions/lpo/arbre_indexe, []).
+
 
 % ============================================================================
-% verifier(+Formule)
+% verifier(+Formule, +Logique)
 %
-% Applique la méthode des connexions à la formule donnée.
+% Logique : prop | lpo
+% Applique la méthode des connexions dans la logique choisie.
 % ============================================================================
-verifier(Formule) :-
+% Logique propositionnelle ---------------------------------------------------
+verifier(Formule, prop) :-
       write('=== Formule : '),
       ecrire_formule(Formule),
       write(' ==='), 
@@ -64,24 +80,66 @@ verifier(Formule) :-
       write('=== Fin ==='),
       nl.
 
+% Logique du premier ordre ----------------------------------------------
+verifier(Formule, lpo) :-
+      write('=== Formule : '),
+      ecrire_formule(Formule),
+      write(' ==='), 
+      nl,
+
+      % Etape 1 : Arbre des formules indexé
+      echo_nl,
+      echo("--- Arbre syntaxique indexé ---"),
+      echo_nl,
+      arbre_indexe_lpo:generer_arbre_indexe(Formule, ArbreIndexe),
+      (
+            echo_on -> arbre_indexe_lpo:afficher_arbre_indexe(ArbreIndexe)
+            ;
+            true
+      ),
+
+      % Etape 2 : Arbre des chemins
+      echo_nl,
+      echo("--- Arbre des chemins ---"),
+      echo_nl,
+      
+
+      % Etape 3 : Recherche de connexions + Conclusion
+      echo_nl,
+      echo("--- Recherche de connexions ---"),
+      echo_nl,
+
+      write("--- Résultat ---"),
+      nl,
+      
+      write('=== Fin ==='),
+      nl.
+
 % ============================================================================
-% verif(+Formule)
+% verif(+Formule, +Logique)
 %
+% Logique : prop | lpo (si vide, prop par défaut)
 % Applique la méthode des connexions sans trace.
 % ============================================================================
-verif(Formule) :-
+verif(Formule) :- verif(Formule, prop). % Prop par défaut
+verif(Formule, Logique) :-
       clr_echo, % Désactive la trace par echo/1
-      verifier(Formule).
+      verifier(Formule, Logique).
 
 % ============================================================================
-% verif(+Formule)
+% trace_verif(+Formule, +Logique)
 %
-% Applique la méthode des connexions avecs trace.
+% Logique : prop | lpo (si vide, prop par défaut)
+% Applique la méthode des connexions sans trace.
 % ============================================================================
-trace_verif(Formule) :-
+trace_verif(Formule) :- verif(Formule, prop). % Prop par défaut
+trace_verif(Formule, Logique) :-
       set_echo, % Active la trace par echo/1
-      verifier(Formule).
+      verifier(Formule, Logique).
 
 % Tests avec trace de l'exemple du cours et du TD :
+% prop
 %?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
 %?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
+% lpo
+?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo).

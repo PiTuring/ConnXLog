@@ -1,11 +1,11 @@
-% methode_connexions/recherche_connexions.pl
+% methode_connexions/lpo/recherche_connexions.pl
 
 :- module(recherche_connexions, [
 	verifier_connexions/2,
 	afficher_connexions/1
 ]).
-:- include('../core/utils').
-:- use_module('../core/arbre').
+:- include('../../core/utils').
+:- use_module('../../core/arbre').
 :- use_module(arbre_indexe).
 :- use_module(arbre_chemins).
 
