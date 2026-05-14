@@ -130,14 +130,16 @@ verifier(Formule, lpo) :-
       
       (
             Resultat = valide -> 
-                (   echo_on -> 
-                        recherche_connexions_lpo:creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe),
-                        recherche_connexions_lpo:afficher_graphe(Graphe)
-                    ;   true
-                ),
-                write("La formule est valide (cycle non verifié).")
+                recherche_connexions_lpo:creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe),
+                (   echo_on -> recherche_connexions_lpo:afficher_graphe(Graphe) ; true ),
+                
+                (   recherche_connexions_lpo:detecter_cycle(Graphe) ->
+                    write("La formule n'est pas valide (Cycle de dépendance détecté).")
+                ;   
+                    write("La formule est valide.")
+                )
             ;
-                write("La formule n'est pas valide.")
+                write("La formule n'est pas valide (Au moins un chemin n'est pas connecté).")
       ),
       nl,
       write('=== Fin ==='),
@@ -172,6 +174,7 @@ trace_verif(Formule, Logique) :-
 % ?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
 % lpo
 % ?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
-?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
-%?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
-%?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
+% ?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
+% ?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
+%  ?- trace_verif((x pt (y ie (p(x,y)))) impl (y ie (x pt (p(x,y)))), lpo). % Test de cycle
+?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD

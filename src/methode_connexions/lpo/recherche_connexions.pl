@@ -4,7 +4,8 @@
     verifier_connexions/3,
     afficher_connexions/1,
     creer_graphe_dependance/3,
-    afficher_graphe/1
+    afficher_graphe/1,
+		detecter_cycle/1
 ]).
 :- include('../../core/utils').
 :- use_module('../../core/arbre').
@@ -196,8 +197,10 @@ extraire_liens_structure(noeud(Etiquette, Gauche, Droit), Liens) :-
 
 % Prédicat utilitaire pour créer l'arête vers un fils s'il existe
 extraire_arete_vers_fils(_, nil, []) :- !.
-extraire_arete_vers_fils(P, feuille(Etig), [arete(P, I)]) :- !, etiq_index(Etig, I).
-extraire_arete_vers_fils(P, noeud(Etig, _, _), [arete(P, I)]) :- !, etiq_index(Etig, I).
+extraire_arete_vers_fils(P, feuille(Etig), [arete(struct, AP, AI)]) :- 
+    !, etiq_index(Etig, I), atom_concat(a, P, AP), atom_concat(a, I, AI).
+extraire_arete_vers_fils(P, noeud(Etig, _, _), [arete(struct, AP, AI)]) :- 
+    !, etiq_index(Etig, I), atom_concat(a, P, AP), atom_concat(a, I, AI).
 
 
 % ============================================================================
@@ -218,7 +221,7 @@ extraire_liens_substitution([subst(V, Terme) | Reste], LiensTotal) :-
 
 % generer_aretes_unif(+ListeIndices, +Variable, -Arretes)
 generer_aretes_unif([], _, []).
-generer_aretes_unif([I|Is], V, [arete(I, V) | Reste]) :-
+generer_aretes_unif([I|Is], V, [arete(unif, I, V) | Reste]) :-
     generer_aretes_unif(Is, V, Reste).
 
 % ============================================================================
@@ -229,8 +232,10 @@ generer_aretes_unif([I|Is], V, [arete(I, V) | Reste]) :-
 afficher_graphe(Graphe) :-
     write("--- Graphe de dépendance ---"), nl,
     (   Graphe = [] -> write("  (Graphe vide)")
-    ;   forall(member(arete(Source, Cible), Graphe), 
-               format("  ~w -> ~w~n", [Source, Cible]))
+    ;   forall(member(arete(Type, Source, Cible), Graphe), 
+               (  Type == struct -> format("  ~w ---> ~w (structure)~n", [Source, Cible])
+               ;  format("  ~w ===> ~w (unification)~n", [Source, Cible])
+               ))
     ),
     nl.
 
@@ -251,3 +256,20 @@ trouver_indices_liste([T|Ts], Indices) :-
     trouver_indices_liste(Ts, I2),
     append(I1, I2, Indices).
 
+% ============================================================================
+% detecter_cycle(+Graphe)
+% vrai s'il existe un cycle dans le graphe.
+% ============================================================================
+detecter_cycle(Graphe) :-
+    member(arete(_, X, _), Graphe),    % On choisit un point de départ
+    visiter(X, Graphe, [X]).     % On lance la visite en gardant l'historique
+
+% Si le prochain nœud Y est déjà dans le chemin parcouru : cycle !
+visiter(X, Graphe, Chemin) :-
+    member(arete(_, X, Y), Graphe),
+    member(Y, Chemin), !.
+
+% Sinon, on continue l'exploration
+visiter(X, Graphe, Chemin) :-
+    member(arete(_, X, Y), Graphe),
+    visiter(Y, Graphe, [Y|Chemin]).

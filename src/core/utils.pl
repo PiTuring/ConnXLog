@@ -30,6 +30,7 @@
 %
 % Remplace toutes les occurrences de Ancien par Nouveau dans Terme.
 % ============================================================================
+substituer(Terme, _, _, Terme) :- var(Terme), !.
 substituer(Ancien, Ancien, Nouveau, Nouveau) :- !.
 substituer(Terme, _, _, Terme) :- atomic(Terme), !.
 substituer(Terme, Ancien, Nouveau, Resultat) :-
