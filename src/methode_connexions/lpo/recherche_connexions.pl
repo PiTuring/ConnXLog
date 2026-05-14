@@ -10,6 +10,26 @@
 :- use_module(arbre_chemins).
 
 % ============================================================================
+% Pour matheo :
+%
+% On gere les variables issus de gamma par la structure var(Position, variable)
+% qui utilise les variables de Prolog. (Super pour l'unification)
+% Par exemple si a3 est un gamma, ca produit a4 et la variable sera var(a4, 0412jspquoi)
+%
+% Ca permet :
+%	1) afficher quand meme a4 dans l'arbre des chemins et futur graphe
+%	2) de faire des substitutions de prolog dessus.
+%
+% TODO :
+%	Trouver la substitution qui défini l'ordre < (c'est pas le bon symbole mais tas capté)
+% 	Construire le graphe avec relation "a pour sous-formule" et <
+% 	Detecter cycle (DFS sur le graphe ?)
+%	Tester sur exemple 1 du TD
+%	Voir pour multiplicité n (idée : recommencer la construction au debut avec multiplicité 2, etc.)
+%	Mettre limite à 10 ? 5 ?
+% ============================================================================
+
+% ============================================================================
 % Recherche dans chaque chemin final d'un arbre généré par `arbre_chemins`
 % d'une connexion.
 % ============================================================================
@@ -27,7 +47,7 @@ verifier_connexions(_, invalide).
 % ============================================================================
 % tous_chemins_connectes(+ArbreChemins)
 %
-% Vari si tous les chemins finaux de l'arbre contiennent une connexion.
+% Vrai si tous les chemins finaux de l'arbre contiennent une connexion.
 % ============================================================================
 % Lorsqu'on est sur un chemin final, on vérifie si il existe une connexion
 tous_chemins_connectes(feuille(etiq_chemin_final(Feuilles))) :-
@@ -90,7 +110,7 @@ afficher_connexions(feuille(etiq_chemin_final(Feuilles)), N, N1) :-
                   etiq_index(Etiquette1, Index1),
                   etiq_index(Etiquette2, Index2),
                   etiq_formule(Etiquette1, Symbole),
-									nettoyer_formule(Symbole, SymbolePropre),
+			nettoyer_formule(Symbole, SymbolePropre),
                   format("connexion (a~w, a~w) sur '~w'.~n", [Index1, Index2, SymbolePropre])
             ;   
                   format("aucune connexion.~n")
