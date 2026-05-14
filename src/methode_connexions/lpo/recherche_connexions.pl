@@ -5,32 +5,12 @@
     afficher_connexions/1,
     creer_graphe_dependance/3,
     afficher_graphe/1,
-		detecter_cycle/1
+	detecter_cycle/1
 ]).
 :- include('../../core/utils').
 :- use_module('../../core/arbre').
 :- use_module(arbre_indexe).
 :- use_module(arbre_chemins).
-
-% ============================================================================
-% Pour matheo :
-%
-% On gere les variables issus de gamma par la structure var(Position, variable)
-% qui utilise les variables de Prolog. (Super pour l'unification)
-% Par exemple si a3 est un gamma, ca produit a4 et la variable sera var(a4, 0412jspquoi)
-%
-% Ca permet :
-%	1) afficher quand meme a4 dans l'arbre des chemins et futur graphe
-%	2) de faire des substitutions de prolog dessus.
-%
-% TODO :
-%	Trouver la substitution qui défini l'ordre < (c'est pas le bon symbole mais tas capté)
-% 	Construire le graphe avec relation "a pour sous-formule" et <
-% 	Detecter cycle (DFS sur le graphe ?)
-%	Tester sur exemple 1 du TD
-%	Voir pour multiplicité n (idée : recommencer la construction au debut avec multiplicité 2, etc.)
-%	Mettre limite à 10 ? 5 ?
-% ============================================================================
 
 % ============================================================================
 % Recherche dans chaque chemin final d'un arbre généré par `arbre_chemins`
@@ -52,13 +32,9 @@ verifier_connexions(Arbre, Resultat, ListeSubst) :-
 parcourir_chemins(feuille(etiq_chemin_final(Feuilles)), Subst) :-
     connexion(Feuilles, _, _, Subst).
 
-parcourir_chemins(noeud(_, G, D), SubstTotale) :-
-    parcourir_chemins(G, SG),
-    (D \= nil -> 
-        parcourir_chemins(D, SD), 
-        append(SG, SD, SubstTotale) 
-    ;   SubstTotale = SG
-    ).
+parcourir_chemins(noeud(_, ListFils), SubstTotale) :-
+    maplist(parcourir_chemins, ListeFils, ListesSubst),
+    append(ListesSubst, SubstTotale).
 
 
 % ============================================================================
@@ -113,18 +89,19 @@ afficher_connexions(feuille(etiq_chemin_final(Feuilles)), N, N1) :-
             nettoyer_formule(Symbole2, SymbolePropre2),
             
             % On affiche avec les bonnes variables
-            format("connexion (a~w, a~w) entre '~w' et '~w'.~n", [Index1, Index2, SymbolePropre1, SymbolePropre2]),
+            format("connexion (~w, a~w) entre '~w' et '~w'.~n", [Index1, Index2, SymbolePropre1, SymbolePropre2]),
             format("             Substitutions : ~w~n", [Subst])
         ;   
             format("aucune connexion.~n")
     ).
 
-afficher_connexions(noeud(_, FilsGauche, nil), N, N1) :-
-    afficher_connexions(FilsGauche, N, N1).
-afficher_connexions(noeud(_, FilsGauche, FilsDroit), N, N2) :-
-	FilsDroit \= nil,
-	afficher_connexions(FilsGauche, N, N1),
-	afficher_connexions(FilsDroit, N1, N2).
+afficher_connexions(noeud(_, ListeFils), N, N1) :-
+    afficher_liste_connexions(ListeFils, N, N1).
+
+afficher_liste_connexions([], N, N).
+afficher_liste_connexions([F|R], NIn, NOut) :-
+    afficher_connexions(F, NIn, NMid),
+    afficher_liste_connexions(R, NMid, NOut).
 
 % ============================================================================
 % unifier_lpo(+T1, +T2, -Subst)
@@ -181,27 +158,16 @@ extraire_liens_structure(nil, []).
 extraire_liens_structure(feuille(_), []).
 
 % Cas d'un noeud : on lie l'index actuel à l'index des fils
-extraire_liens_structure(noeud(Etiquette, Gauche, Droit), Liens) :-
-    etiq_index(Etiquette, IndexParent),
-    
-    % On récupère les arêtes vers les fils directs
-    extraire_arete_vers_fils(IndexParent, Gauche, ArreteG),
-    extraire_arete_vers_fils(IndexParent, Droit, ArreteD),
-    
-    % Récurrence sur les sous-arbres
-    extraire_liens_structure(Gauche, LiensG),
-    extraire_liens_structure(Droit, LiensD),
-    
-    % On aplatit tout
-    append([ArreteG, ArreteD, LiensG, LiensD], Liens).
+extraire_liens_structure(noeud(Etiquette, ListeFils), Liens) :-
+    arbre_indexe_lpo:etiq_index(Etiquette, IndexParent),
+    maplist(extraire_arete_vers_fils(IndexParent), ListeFils, AretesFils),
+    maplist(extraire_liens_structure, ListeFils, LiensFils),
+    flatten([AretesFils, LiensFils], Liens).
 
 % Prédicat utilitaire pour créer l'arête vers un fils s'il existe
-extraire_arete_vers_fils(_, nil, []) :- !.
-extraire_arete_vers_fils(P, feuille(Etig), [arete(struct, AP, AI)]) :- 
-    !, etiq_index(Etig, I), atom_concat(a, P, AP), atom_concat(a, I, AI).
-extraire_arete_vers_fils(P, noeud(Etig, _, _), [arete(struct, AP, AI)]) :- 
-    !, etiq_index(Etig, I), atom_concat(a, P, AP), atom_concat(a, I, AI).
-
+extraire_arete_vers_fils(P, Fils, arete(struct, P, I)) :-
+    (est_noeud(Fils) -> noeud_etiquette(Fils, Et) ; feuille_etiquette(Fils, Et)),
+    arbre_indexe_lpo:etiq_index(Et, I).
 
 % ============================================================================
 % LIENS DE SUBSTITUTION : IndiceDansTerme -> IndexVariable
@@ -209,20 +175,26 @@ extraire_arete_vers_fils(P, noeud(Etig, _, _), [arete(struct, AP, AI)]) :-
 
 extraire_liens_substitution([], []).
 extraire_liens_substitution([subst(V, Terme) | Reste], LiensTotal) :-
-    % On cherche tous les indices de variables/constantes présents dans le Terme
     trouver_indices_dans_terme(Terme, Indices),
-    
-    % Pour chaque indice trouvé, on crée une arête : Indice -> V
-    % (ça veut dire : "V dépend de l'existence de l'indice présent dans son terme")
+    % Ici V est l'index de la variable (ex: a1_1)
     generer_aretes_unif(Indices, V, LiensIci),
-    
     extraire_liens_substitution(Reste, LiensReste),
     append(LiensIci, LiensReste, LiensTotal).
 
-% generer_aretes_unif(+ListeIndices, +Variable, -Arretes)
 generer_aretes_unif([], _, []).
 generer_aretes_unif([I|Is], V, [arete(unif, I, V) | Reste]) :-
     generer_aretes_unif(Is, V, Reste).
+
+% Trouver les indices (atomes commençant par 'a') dans un terme
+trouver_indices_dans_terme(T, []) :- var(T), !.
+trouver_indices_dans_terme(A, [A]) :- 
+    atom(A), atom_concat(a, _, A), !.
+trouver_indices_dans_terme(Terme, Indices) :-
+    compound(Terme), !,
+    Terme =.. [_ | Args],
+    maplist(trouver_indices_dans_terme, Args, Listes),
+    flatten(Listes, Indices).
+trouver_indices_dans_terme(_, []).
 
 % ============================================================================
 % afficher_graphe(+Graphe)
@@ -239,22 +211,6 @@ afficher_graphe(Graphe) :-
     ),
     nl.
 
-% trouver_indices_dans_terme(+Terme, -ListeIndices)
-% Parcourt un terme pour extraire les indices de type a1, a2...
-trouver_indices_dans_terme(T, []) :- var(T), !.
-trouver_indices_dans_terme(V, [V]) :- 
-    atom(V), atom_concat(a, _, V), !.
-trouver_indices_dans_terme(Terme, Indices) :-
-    compound(Terme), !,
-    Terme =.. [_ | Args],
-    trouver_indices_liste(Args, Indices).
-trouver_indices_dans_terme(_, []).
-
-trouver_indices_liste([], []).
-trouver_indices_liste([T|Ts], Indices) :-
-    trouver_indices_dans_terme(T, I1),
-    trouver_indices_liste(Ts, I2),
-    append(I1, I2, Indices).
 
 % ============================================================================
 % detecter_cycle(+Graphe)
