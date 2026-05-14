@@ -1,8 +1,10 @@
 % methode_connexions/lpo/recherche_connexions.pl
 
 :- module(recherche_connexions_lpo, [
-	verifier_connexions/2,
-	afficher_connexions/1
+    verifier_connexions/3,
+    afficher_connexions/1,
+    creer_graphe_dependance/3,
+    afficher_graphe/1
 ]).
 :- include('../../core/utils').
 :- use_module('../../core/arbre').
@@ -35,45 +37,35 @@
 % ============================================================================
 
 % ============================================================================
-% verifier_connexions(+ArbreChemins, -Resultat)
+% verifier_connexions(+ArbreChemins, -Resultat, -ListeSubstTotale)
 %
 % Resultat : valide si tous les chemins finaux contiennent une connexion.
-%			 invalide sinon.
+% ListeSubstTotale : Ensemble des substitutions collectées pour le graphe.
 % ============================================================================
-verifier_connexions(ArbreChemins, valide) :-
-	tous_chemins_connectes(ArbreChemins), !.
-verifier_connexions(_, invalide).
+verifier_connexions(Arbre, Resultat, ListeSubst) :-
+    (parcourir_chemins(Arbre, ListeSubst) -> Resultat = valide ; Resultat = invalide, ListeSubst = []).
+
+
+
+% Parcourt l'arbre des chemins et accumule les substitutions
+parcourir_chemins(feuille(etiq_chemin_final(Feuilles)), Subst) :-
+    connexion(Feuilles, _, _, Subst).
+
+parcourir_chemins(noeud(_, G, D), SubstTotale) :-
+    parcourir_chemins(G, SG),
+    (D \= nil -> 
+        parcourir_chemins(D, SD), 
+        append(SG, SD, SubstTotale) 
+    ;   SubstTotale = SG
+    ).
+
 
 % ============================================================================
-% tous_chemins_connectes(+ArbreChemins)
+% connexion(+Feuilles, -Feuille1, -Feuille2, -Subst)
 %
-% Vrai si tous les chemins finaux de l'arbre contiennent une connexion.
+% Trouve une paire de feuilles de même prédicat et de polarité opposée. Renvoie aussi la substitution
 % ============================================================================
-% Lorsqu'on est sur un chemin final, on vérifie si il existe une connexion
-tous_chemins_connectes(feuille(etiq_chemin_final(Feuilles))) :-
-	chemin_connecte(Feuilles).
-% Sinon on vérifie dans les fils
-tous_chemins_connectes(noeud(_, FilsGauche, nil)) :-
-	tous_chemins_connectes(FilsGauche).
-tous_chemins_connectes(noeud(_, FilsGauche, FilsDroit)) :-
-	FilsDroit \= nil,
-	tous_chemins_connectes(FilsGauche),
-	tous_chemins_connectes(FilsDroit).
-
-% ============================================================================
-% chemin_connecte(+Feuilles)
-%
-% Vrai si la liste de feuilles contient une connexion.
-% ============================================================================
-chemin_connecte(Feuilles) :-
-	connexion(Feuilles, _, _), !.
-
-% ============================================================================
-% connexion(+Feuilles, -Feuille1, -Feuille2)
-%
-% Trouve une paire de feuilles de même prédicat et de polarité opposée.
-% ============================================================================
-connexion(Feuilles, F1, F2) :-
+connexion(Feuilles, F1, F2, Subst) :-
 	% On prend une feuille du chemin
 	select(F1, Feuilles, Reste),
 
@@ -93,7 +85,8 @@ connexion(Feuilles, F1, F2) :-
 	etiq_formule(Etiquette2, Litteral2),
 	etiq_polarite(Etiquette2, Polarite2),
 
-	unifier_lpo(Litteral1, Litteral2).
+	% On récupère les substitutions
+	unifier_lpo(Litteral1, Litteral2, Subst).
 
 % ============================================================================
 % afficher_connexions(+ArbreChemins)
@@ -103,44 +96,158 @@ connexion(Feuilles, F1, F2) :-
 afficher_connexions(ArbreChemins) :- 
 	afficher_connexions(ArbreChemins, 1, _).
 afficher_connexions(feuille(etiq_chemin_final(Feuilles)), N, N1) :-
-	N1 is N + 1,
+    N1 is N + 1,
     format("  Chemin ~w : ", [N]),
-    (       connexion(Feuilles, F1, F2) ->  feuille_etiquette(F1, Etiquette1),
-                  feuille_etiquette(F2, Etiquette2),
-                  etiq_index(Etiquette1, Index1),
-                  etiq_index(Etiquette2, Index2),
-                  etiq_formule(Etiquette1, Symbole),
-			nettoyer_formule(Symbole, SymbolePropre),
-                  format("connexion (a~w, a~w) sur '~w'.~n", [Index1, Index2, SymbolePropre])
-            ;   
-                  format("aucune connexion.~n")
+    (   connexion(Feuilles, F1, F2, Subst) ->  
+            feuille_etiquette(F1, Etiquette1),
+            feuille_etiquette(F2, Etiquette2),
+            etiq_index(Etiquette1, Index1),
+            etiq_index(Etiquette2, Index2),
+            
+            % On récupère les deux formules pour l'affichage
+            etiq_formule(Etiquette1, Symbole1),
+            etiq_formule(Etiquette2, Symbole2),
+            
+            nettoyer_formule(Symbole1, SymbolePropre1),
+            nettoyer_formule(Symbole2, SymbolePropre2),
+            
+            % On affiche avec les bonnes variables
+            format("connexion (a~w, a~w) entre '~w' et '~w'.~n", [Index1, Index2, SymbolePropre1, SymbolePropre2]),
+            format("             Substitutions : ~w~n", [Subst])
+        ;   
+            format("aucune connexion.~n")
     ).
+
 afficher_connexions(noeud(_, FilsGauche, nil), N, N1) :-
-	afficher_connexions(FilsGauche, N, N1).
+    afficher_connexions(FilsGauche, N, N1).
 afficher_connexions(noeud(_, FilsGauche, FilsDroit), N, N2) :-
 	FilsDroit \= nil,
 	afficher_connexions(FilsGauche, N, N1),
 	afficher_connexions(FilsDroit, N1, N2).
 
 % ============================================================================
-% unifier_lpo(+T1, +T2)
+% unifier_lpo(+T1, +T2, -Subst)
 %
-% Unification intelligente qui gère les structures var(Position, Variable)
+% Unification intelligente qui gère les structures var(Position, Variable) et renvoie la liste des substitutions
+% pour la substitution, on utilise une structure de la forme subst(ancien, nouveau)
 % ============================================================================
 % Cas 1 : Deux variables Gamma
-unifier_lpo(var(_, V1), var(_, V2)) :- !, unify_with_occurs_check(V1, V2).
+unifier_lpo(var(Pos1, V1), var(Pos2, V2), [subst(Pos1, var(Pos2, V2))]) :- !, unify_with_occurs_check(V1, V2).
 
 % Cas 2 : Une variable Gamma et un autre terme (Delta ou atome)
-unifier_lpo(var(_, V), Terme) :- !, unify_with_occurs_check(V, Terme).
-unifier_lpo(Terme, var(_, V)) :- !, unify_with_occurs_check(V, Terme).
+unifier_lpo(var(Pos1, V), Terme, [subst(Pos1, Terme)]) :- !, unify_with_occurs_check(V, Terme).
+unifier_lpo(Terme, var(Pos2, V), [subst(Pos2, Terme)]) :- !, unify_with_occurs_check(V, Terme).
 
 % Cas 3 : Deux prédicats/fonctions (on décompose et on unifie les arguments)
-unifier_lpo(T1, T2) :-
+unifier_lpo(T1, T2, SubstGlobales) :-
     compound(T1), compound(T2), !,
     T1 =.. [Nom | Args1],
     T2 =.. [Nom | Args2],
-    maplist(unifier_lpo, Args1, Args2).
+    unifier_listes_args(Args1, Args2, SubstGlobales).
+
+% --- Fonction utilitaire pour le cas 3 ---
+% Parcourt les arguments, unifie un par un, et assemble (aplatit) les listes de substitutions
+unifier_listes_args([], [], []).
+unifier_listes_args([Arg1 | Reste1], [Arg2 | Reste2], SubstTotales) :-
+    unifier_lpo(Arg1, Arg2, SubstArg),           % Unifie le premier argument
+    unifier_listes_args(Reste1, Reste2, SubstReste), % Appel récursif sur le reste
+    append(SubstArg, SubstReste, SubstTotales).  % Concatène les 2 listes
 
 % Cas 4 : Atomes ou constantes identiques (Delta)
-unifier_lpo(T1, T2) :-
+unifier_lpo(T1, T2, []) :-
     T1 == T2.
+
+% ============================================================================
+% creer_graphe_dependance(+ArbreIndexe, +ListeSubst, -Graphe)
+% ============================================================================
+creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe) :-
+    % Extraire les liens directs de l'arbre (Structure de l'arbre)
+    extraire_liens_structure(ArbreIndexe, LiensStructure),
+
+    % Extraire les liens d'unification (Substitutions)
+    extraire_liens_substitution(ListeSubst, LiensSubst),
+
+    % Fusionner et supprimer les doublons
+    append(LiensStructure, LiensSubst, GrapheBrut),
+    sort(GrapheBrut, Graphe).
+
+% ============================================================================
+% LIENS DE STRUCTURE : Parent -> Enfant
+% ============================================================================
+
+% Cas d'une feuille ou d'un noeud vide : pas de liens vers le bas
+extraire_liens_structure(nil, []).
+extraire_liens_structure(feuille(_), []).
+
+% Cas d'un noeud : on lie l'index actuel à l'index des fils
+extraire_liens_structure(noeud(Etiquette, Gauche, Droit), Liens) :-
+    etiq_index(Etiquette, IndexParent),
+    
+    % On récupère les arêtes vers les fils directs
+    extraire_arete_vers_fils(IndexParent, Gauche, ArreteG),
+    extraire_arete_vers_fils(IndexParent, Droit, ArreteD),
+    
+    % Récurrence sur les sous-arbres
+    extraire_liens_structure(Gauche, LiensG),
+    extraire_liens_structure(Droit, LiensD),
+    
+    % On aplatit tout
+    append([ArreteG, ArreteD, LiensG, LiensD], Liens).
+
+% Prédicat utilitaire pour créer l'arête vers un fils s'il existe
+extraire_arete_vers_fils(_, nil, []) :- !.
+extraire_arete_vers_fils(P, feuille(Etig), [arete(P, I)]) :- !, etiq_index(Etig, I).
+extraire_arete_vers_fils(P, noeud(Etig, _, _), [arete(P, I)]) :- !, etiq_index(Etig, I).
+
+
+% ============================================================================
+% LIENS DE SUBSTITUTION : IndiceDansTerme -> IndexVariable
+% ============================================================================
+
+extraire_liens_substitution([], []).
+extraire_liens_substitution([subst(V, Terme) | Reste], LiensTotal) :-
+    % On cherche tous les indices de variables/constantes présents dans le Terme
+    trouver_indices_dans_terme(Terme, Indices),
+    
+    % Pour chaque indice trouvé, on crée une arête : Indice -> V
+    % (ça veut dire : "V dépend de l'existence de l'indice présent dans son terme")
+    generer_aretes_unif(Indices, V, LiensIci),
+    
+    extraire_liens_substitution(Reste, LiensReste),
+    append(LiensIci, LiensReste, LiensTotal).
+
+% generer_aretes_unif(+ListeIndices, +Variable, -Arretes)
+generer_aretes_unif([], _, []).
+generer_aretes_unif([I|Is], V, [arete(I, V) | Reste]) :-
+    generer_aretes_unif(Is, V, Reste).
+
+% ============================================================================
+% afficher_graphe(+Graphe)
+%
+% Affiche proprement les arêtes du graphe de dépendance.
+% ============================================================================
+afficher_graphe(Graphe) :-
+    write("--- Graphe de dépendance ---"), nl,
+    (   Graphe = [] -> write("  (Graphe vide)")
+    ;   forall(member(arete(Source, Cible), Graphe), 
+               format("  ~w -> ~w~n", [Source, Cible]))
+    ),
+    nl.
+
+% trouver_indices_dans_terme(+Terme, -ListeIndices)
+% Parcourt un terme pour extraire les indices de type a1, a2...
+trouver_indices_dans_terme(T, []) :- var(T), !.
+trouver_indices_dans_terme(V, [V]) :- 
+    atom(V), atom_concat(a, _, V), !.
+trouver_indices_dans_terme(Terme, Indices) :-
+    compound(Terme), !,
+    Terme =.. [_ | Args],
+    trouver_indices_liste(Args, Indices).
+trouver_indices_dans_terme(_, []).
+
+trouver_indices_liste([], []).
+trouver_indices_liste([T|Ts], Indices) :-
+    trouver_indices_dans_terme(T, I1),
+    trouver_indices_liste(Ts, I2),
+    append(I1, I2, Indices).
+

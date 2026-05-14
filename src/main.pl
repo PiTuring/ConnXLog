@@ -112,7 +112,7 @@ verifier(Formule, lpo) :-
       ),
       
 
-      % Etape 3 : Recherche de connexions + Conclusion
+            % Etape 3 : Recherche de connexions + Conclusion
       echo_nl,
       echo("--- Recherche de connexions ---"),
       echo_nl,
@@ -126,8 +126,23 @@ verifier(Formule, lpo) :-
       write("--- Résultat ---"),
       nl,
       
+      recherche_connexions_lpo:verifier_connexions(ArbreChemins, Resultat, ListeSubst),
+      
+      (
+            Resultat = valide -> 
+                (   echo_on -> 
+                        recherche_connexions_lpo:creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe),
+                        recherche_connexions_lpo:afficher_graphe(Graphe)
+                    ;   true
+                ),
+                write("La formule est valide (cycle non verifié).")
+            ;
+                write("La formule n'est pas valide.")
+      ),
+      nl,
       write('=== Fin ==='),
       nl.
+
 
 % ============================================================================
 % verif(+Formule, +Logique)
@@ -153,10 +168,10 @@ trace_verif(Formule, Logique) :-
 
 % Tests avec trace de l'exemple du cours et du TD :
 % prop
-%?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
-%?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
+% ?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
+% ?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
 % lpo
-?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
-%?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
+% ?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
+?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
 %?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
 %?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
