@@ -48,7 +48,7 @@ regles_communes:etiqueter(X pt A, 1, IndexIn, IndexOut,
     noeud(etiq_formule(gamma, gamma0, none, X pt A, 1, IndexIn), ArbreA, nil)) :-
     Index1 is IndexIn + 1,
     atom_concat(a, Index1, NomPosition),
-    VariableGamma = var(NomPosition, V),
+    VariableGamma = var(NomPosition, _),
     substituer(A, X, VariableGamma, ASubst),
     regles_communes:etiqueter(ASubst, 1, Index1, IndexOut, ArbreA).
 
@@ -57,7 +57,7 @@ regles_communes:etiqueter(X ie A, 0, IndexIn, IndexOut,
     noeud(etiq_formule(gamma, gamma0, none, X ie A, 0, IndexIn), ArbreA, nil)) :-
     Index1 is IndexIn + 1,
     atom_concat(a, Index1, NomPosition),
-    VariableGamma = var(NomPosition, V),
+    VariableGamma = var(NomPosition, _),
     substituer(A, X, VariableGamma, ASubst),
     regles_communes:etiqueter(ASubst, 0, Index1, IndexOut, ArbreA).
 
