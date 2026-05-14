@@ -93,7 +93,7 @@ verifier(Formule, lpo) :-
       echo_nl,
       echo("--- Arbre syntaxique indexé ---"),
       echo_nl,
-      arbre_indexe_lpo:generer_arbre_indexe(Formule, ArbreIndexe),
+      arbre_indexe_lpo:generer_arbre_indexe(Formule, 2, ArbreIndexe),
       (
             echo_on -> arbre_indexe_lpo:afficher_arbre_indexe(ArbreIndexe)
             ;
@@ -104,43 +104,43 @@ verifier(Formule, lpo) :-
       echo_nl,
       echo("--- Arbre des chemins ---"),
       echo_nl,
-      arbre_chemins_lpo:generer_arbre_chemins(ArbreIndexe, ArbreChemins),
-      (
-            echo_on -> arbre_chemins_lpo:afficher_arbre_chemins(ArbreChemins)
-            ;
-            true
-      ),
+      %arbre_chemins_lpo:generer_arbre_chemins(ArbreIndexe, ArbreChemins),
+      %(
+      %      echo_on -> arbre_chemins_lpo:afficher_arbre_chemins(ArbreChemins)
+      %      ;
+      %      true
+      %),
       
 
-            % Etape 3 : Recherche de connexions + Conclusion
+      % Etape 3 : Recherche de connexions + Conclusion
       echo_nl,
       echo("--- Recherche de connexions ---"),
       echo_nl,
-      (
-            echo_on -> recherche_connexions_lpo:afficher_connexions(ArbreChemins)
-            ;
-            true
-      ),
+      %(
+      %      echo_on -> recherche_connexions_lpo:afficher_connexions(ArbreChemins)
+      %      ;
+      %      true
+      %),
       echo_nl,
 
       write("--- Résultat ---"),
       nl,
       
-      recherche_connexions_lpo:verifier_connexions(ArbreChemins, Resultat, ListeSubst),
+      %recherche_connexions_lpo:verifier_connexions(ArbreChemins, Resultat, ListeSubst),
       
-      (
-            Resultat = valide -> 
-                recherche_connexions_lpo:creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe),
-                (   echo_on -> recherche_connexions_lpo:afficher_graphe(Graphe) ; true ),
-                
-                (   recherche_connexions_lpo:detecter_cycle(Graphe) ->
-                    write("La formule n'est pas valide (Cycle de dépendance détecté).")
-                ;   
-                    write("La formule est valide.")
-                )
-            ;
-                write("La formule n'est pas valide (Au moins un chemin n'est pas connecté).")
-      ),
+      %(
+      %      Resultat = valide -> 
+      %          recherche_connexions_lpo:creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe),
+      %          (   echo_on -> recherche_connexions_lpo:afficher_graphe(Graphe) ; true ),
+      %          
+      %          (   recherche_connexions_lpo:detecter_cycle(Graphe) ->
+      %              write("La formule n'est pas valide (Cycle de dépendance détecté).")
+      %          ;   
+      %             write("La formule est valide.")
+      %         )
+      %     ;
+      %          write("La formule n'est pas valide (Au moins un chemin n'est pas connecté).")
+      %),
       nl,
       write('=== Fin ==='),
       nl.
@@ -176,5 +176,5 @@ trace_verif(Formule, Logique) :-
 % ?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
 % ?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
 % ?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
-%  ?- trace_verif((x pt (y ie (p(x,y)))) impl (y ie (x pt (p(x,y)))), lpo). % Test de cycle
+% ?- trace_verif((x pt (y ie (p(x,y)))) impl (y ie (x pt (p(x,y)))), lpo). % Test de cycle
 ?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD

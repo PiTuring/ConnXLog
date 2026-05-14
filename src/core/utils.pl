@@ -39,6 +39,13 @@ substituer(Terme, Ancien, Nouveau, Resultat) :-
     maplist([Arg, ArgSubst]>>(substituer(Arg, Ancien, Nouveau, ArgSubst)), Args, ArgsSubst),
     Resultat =.. [F | ArgsSubst].
 
+% --- Helper pour construire le nom de position ---
+% Si Suffixe = none -> "a1"
+% Si Suffixe = 1    -> "a1_1"
+construire_nom(Index, none, Nom) :- !, atom_concat(a, Index, Nom).
+construire_nom(Index, Suffix, Nom) :- 
+    atomic_list_concat([a, Index, '_', Suffix], Nom).
+
 % ── Littéraux (feuilles) ─────────────────────────────────────────────────────
 % Un littéral est :
 %   - un atome propositionnel : p, q, r
