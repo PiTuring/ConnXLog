@@ -104,12 +104,12 @@ verifier(Formule, lpo) :-
       echo_nl,
       echo("--- Arbre des chemins ---"),
       echo_nl,
-      %arbre_chemins_lpo:generer_arbre_chemins(ArbreIndexe, ArbreChemins),
-      %(
-      %      echo_on -> arbre_chemins_lpo:afficher_arbre_chemins(ArbreChemins)
-      %      ;
-      %      true
-      %),
+      arbre_chemins_lpo:generer_arbre_chemins(ArbreIndexe, ArbreChemins),
+      (
+            echo_on -> arbre_chemins_lpo:afficher_arbre_chemins(ArbreChemins)
+            ;
+            true
+      ),
       
 
       % Etape 3 : Recherche de connexions + Conclusion
