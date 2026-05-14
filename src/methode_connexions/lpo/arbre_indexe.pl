@@ -47,16 +47,18 @@ etiq_index(etiq_formule(_, _, _, _, _, I), I).
 regles_communes:etiqueter(X pt A, 1, IndexIn, IndexOut,
     noeud(etiq_formule(gamma, gamma0, none, X pt A, 1, IndexIn), ArbreA, nil)) :-
     Index1 is IndexIn + 1,
-    atom_concat(a, Index1, NomPosition),    % Créer le nom de la prochaine position    
-    substituer(A, X, NomPosition, ASubst),  % [X -> NomPosition] dans A
+    atom_concat(a, Index1, NomPosition),
+    VariableGamma = var(NomPosition, _),
+    substituer(A, X, VariableGamma, ASubst),
     regles_communes:etiqueter(ASubst, 1, Index1, IndexOut, ArbreA).
 
 % Règle (x ie A, 0) -> fils unique (A, 0, gamma1)
 regles_communes:etiqueter(X ie A, 0, IndexIn, IndexOut,
     noeud(etiq_formule(gamma, gamma0, none, X ie A, 0, IndexIn), ArbreA, nil)) :-
     Index1 is IndexIn + 1,
-    atom_concat(a, Index1, NomPosition),    % Créer le nom de la prochaine position    
-    substituer(A, X, NomPosition, ASubst),  % [X -> NomPosition] dans A
+    atom_concat(a, Index1, NomPosition),
+    VariableGamma = var(NomPosition, _),
+    substituer(A, X, VariableGamma, ASubst),
     regles_communes:etiqueter(ASubst, 0, Index1, IndexOut, ArbreA).
 
 % Règles Delta ---------------------------------------------------------------

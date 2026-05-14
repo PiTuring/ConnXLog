@@ -20,6 +20,7 @@
 % lpo
 :- use_module(methode_connexions/lpo/arbre_indexe, []).
 :- use_module(methode_connexions/lpo/arbre_chemins, []).
+:- use_module(methode_connexions/lpo/recherche_connexions, []).
 
 
 % ============================================================================
@@ -114,6 +115,12 @@ verifier(Formule, lpo) :-
       % Etape 3 : Recherche de connexions + Conclusion
       echo_nl,
       echo("--- Recherche de connexions ---"),
+      echo_nl,
+      (
+            echo_on -> recherche_connexions_lpo:afficher_connexions(ArbreChemins)
+            ;
+            true
+      ),
       echo_nl,
 
       write("--- Résultat ---"),

@@ -135,5 +135,8 @@ afficher_feuilles([F | Reste]) :-
       etiq_index(Etiquette, Index),
       etiq_formule(Etiquette, Formule),
       etiq_polarite(Etiquette, Polarite),
-      format("a~w:~w(~w)  ", [Index, Formule, Polarite]),
+      nettoyer_formule(Formule, FormuleAffichee),   
+      format("a~w:~w(~w)  ", [Index, FormuleAffichee, Polarite]),
       afficher_feuilles(Reste).
+
+

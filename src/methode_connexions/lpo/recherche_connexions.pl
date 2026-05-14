@@ -1,6 +1,6 @@
 % methode_connexions/lpo/recherche_connexions.pl
 
-:- module(recherche_connexions, [
+:- module(recherche_connexions_lpo, [
 	verifier_connexions/2,
 	afficher_connexions/1
 ]).
@@ -51,7 +51,7 @@ chemin_connecte(Feuilles) :-
 % ============================================================================
 % connexion(+Feuilles, -Feuille1, -Feuille2)
 %
-% Trouve une paire de feuilles de même symbole et de polarité opposée.
+% Trouve une paire de feuilles de même prédicat et de polarité opposée.
 % ============================================================================
 connexion(Feuilles, F1, F2) :-
 	% On prend une feuille du chemin
@@ -59,7 +59,7 @@ connexion(Feuilles, F1, F2) :-
 
 	% Extraction de polarite et symbole
 	feuille_etiquette(F1, Etiquette1),
-	etiq_formule(Etiquette1, Symbole),
+	etiq_formule(Etiquette1, Litteral1),
 	etiq_polarite(Etiquette1, Polarite1),
 
 	% Polarite de l'autre element doit etre inverse
@@ -68,10 +68,12 @@ connexion(Feuilles, F1, F2) :-
 	% On prend une autre feuille
 	member(F2, Reste),
 
-	% On vérifie même symbole et parité opposée
+	% On vérifie parité opposée
 	feuille_etiquette(F2, Etiquette2),
-	etiq_formule(Etiquette2, Symbole),
-	etiq_polarite(Etiquette2, Polarite2).
+	etiq_formule(Etiquette2, Litteral2),
+	etiq_polarite(Etiquette2, Polarite2),
+
+	unifier_lpo(Litteral1, Litteral2).
 
 % ============================================================================
 % afficher_connexions(+ArbreChemins)
@@ -88,7 +90,8 @@ afficher_connexions(feuille(etiq_chemin_final(Feuilles)), N, N1) :-
                   etiq_index(Etiquette1, Index1),
                   etiq_index(Etiquette2, Index2),
                   etiq_formule(Etiquette1, Symbole),
-                  format("connexion (a~w, a~w) sur '~w'.~n", [Index1, Index2, Symbole])
+									nettoyer_formule(Symbole, SymbolePropre),
+                  format("connexion (a~w, a~w) sur '~w'.~n", [Index1, Index2, SymbolePropre])
             ;   
                   format("aucune connexion.~n")
     ).
@@ -98,3 +101,26 @@ afficher_connexions(noeud(_, FilsGauche, FilsDroit), N, N2) :-
 	FilsDroit \= nil,
 	afficher_connexions(FilsGauche, N, N1),
 	afficher_connexions(FilsDroit, N1, N2).
+
+% ============================================================================
+% unifier_lpo(+T1, +T2)
+%
+% Unification intelligente qui gère les structures var(Position, Variable)
+% ============================================================================
+% Cas 1 : Deux variables Gamma
+unifier_lpo(var(_, V1), var(_, V2)) :- !, unify_with_occurs_check(V1, V2).
+
+% Cas 2 : Une variable Gamma et un autre terme (Delta ou atome)
+unifier_lpo(var(_, V), Terme) :- !, unify_with_occurs_check(V, Terme).
+unifier_lpo(Terme, var(_, V)) :- !, unify_with_occurs_check(V, Terme).
+
+% Cas 3 : Deux prédicats/fonctions (on décompose et on unifie les arguments)
+unifier_lpo(T1, T2) :-
+    compound(T1), compound(T2), !,
+    T1 =.. [Nom | Args1],
+    T2 =.. [Nom | Args2],
+    maplist(unifier_lpo, Args1, Args2).
+
+% Cas 4 : Atomes ou constantes identiques (Delta)
+unifier_lpo(T1, T2) :-
+    T1 == T2.

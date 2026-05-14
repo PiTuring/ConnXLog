@@ -101,6 +101,19 @@ ecrire_type(delta) :- write('ẟ').
 ecrire_type(delta0) :- write('ẟ0').
 
 % ============================================================================
+% nettoyer_formule(+Litteral, -LitteralNettoye)
+%
+%Transforme récursivement les structures var(Pos, _) en Pos pour l'affichage
+% ============================================================================
+nettoyer_formule(var(Pos, _), Pos) :- !. % Cas d'une variable Gamma
+nettoyer_formule(Formule, FormuleNettoyee) :-
+      compound(Formule), !, % Si c'est un prédicat (ex: p(X, Y))
+      Formule =.. [Nom | Args],
+      maplist(nettoyer_formule, Args, ArgsNettoyes),
+      FormuleNettoyee =.. [Nom | ArgsNettoyes].
+nettoyer_formule(Formule, Formule) :- !. % Cas des atomes ou constantes (Delta)
+
+% ============================================================================
 % Prédicats d'affichage ancien TP
 % ============================================================================
 % set_echo: ce prédicat active l'affichage par le prédicat echo
