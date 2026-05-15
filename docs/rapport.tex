@@ -1,0 +1,219 @@
+\documentclass[12pt, a4paper]{article}
+
+% --- Packages indispensables ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb} % Pour les symboles logiques (forall, exists, etc.)
+\usepackage{hyperref}         % Pour les liens dans le sommaire
+\usepackage{xcolor}           % Pour les couleurs
+\usepackage{listings}         % Pour insérer du code Prolog
+
+% --- Configuration de l'affichage du code Prolog ---
+\definecolor{commentgreen}{RGB}{2,112,10}
+\definecolor{keywordblue}{RGB}{0,0,255}
+\definecolor{stringred}{RGB}{163,21,21}
+
+\lstset{
+    language=Prolog,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{keywordblue}\bfseries,
+    commentstyle=\color{commentgreen}\itshape,
+    stringstyle=\color{stringred},
+    showstringspaces=false,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    frame=single,
+    breaklines=true,
+    backgroundcolor=\color{black!5}
+}
+
+% --- Paramétrage des hyperliens ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+
+\begin{document}
+
+% ==============================================================================
+% PAGE DE GARDE
+% ==============================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Large \textsc{Université de Lorraine}\par}
+    \vspace{1.5cm}
+    
+    {\huge \bfseries Rapport de Preuve et Déduction Automatique\par}
+    \vspace{0.5cm}
+    {\Large Implémentation de la méthode des connexions en Prolog\par}
+    
+    \vspace{2cm}
+    
+    \begin{minipage}{0.4\textwidth}
+        \begin{flushleft} \large
+            \emph{Étudiants :}\\
+            Mathéo \textsc{Vignères}\\
+            Guillaume \textsc{Potel}
+        \end{flushleft}
+    \end{minipage}
+    \begin{minipage}{0.4\textwidth}
+        \begin{flushright} \large
+            \emph{Enseignant :} \\
+            M. Didier \textsc{Galmiche}
+        \end{flushright}
+    \end{minipage}
+    
+    \vfill
+
+    
+    {\large Année universitaire 2025-2026\par}
+\end{titlepage}
+
+% ==============================================================================
+% SOMMAIRE
+% ==============================================================================
+\newpage
+\tableofcontents
+\newpage
+
+% ==============================================================================
+% INTRODUCTION (Optionnelle mais recommandée)
+% ==============================================================================
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+
+% Intro
+
+% ==============================================================================
+% PARTIE I : LE SOCLE COMMUN
+% ==============================================================================
+\section{Le socle commun : Logique Propositionnelle et Premier Ordre}
+
+Dans cette première partie, nous présentons les éléments de base qui sont partagés entre la logique propositionnelle et la logique du premier ordre.
+
+\subsection{Définition des règles (Alpha et Bêta)}
+
+La méthode des connexions s'appuie sur l'application de règles appelée $alpha$ et $beta$ Nous avons implémenté ces règles via un prédicat central : \textbf{\texttt{etiqueter/7}}.
+
+Ce prédicat a pour rôle de parcourir la formule initiale pour construire un arbre indexé, où chaque nœud contient le type de règle appliquée ($\alpha, \beta, \gamma, \delta$), sa polarité, et un index unique.
+
+\subsubsection{Le prédicat principal : \texttt{etiqueter/7}}
+
+La signature du prédicat est la suivante :
+\begin{lstlisting}
+etiqueter(+Formule, +Polarite, +IndexIn, -IndexOut, +Multiplicite, +Suffixe, -Arbre).
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Polarité} : $1$ pour une formule affirmée, $0$ pour une formule niée.
+    \item \textbf{IndexIn / IndexOut} : Un mécanisme de compteur permettant d'attribuer un identifiant unique (ex: $a0, a1, ...$) à chaque nœud de l'arbre.
+    \item \textbf{Arbre} : La structure de sortie représentant l'arbre syntaxique indexé sous forme de \texttt{noeud} ou de \texttt{feuille}.
+\end{itemize}
+
+\subsubsection{Les règles de type Alpha ($\alpha$)}
+
+Les règles $\alpha$ correspondent aux décompositions de nature conjonctive (linéaire). Dans notre implémentation, une règle $\alpha$ produit deux sous-arbres qui devront tous deux être validés. Par exemple, pour la conjonction de polarité 1 ($A \land B, 1$) ou l'implication de polarité 0 ($A \rightarrow B, 0$) :
+
+\begin{lstlisting}
+% Exemple : Implication niee (A -> B, 0)
+etiqueter(A impl B, 0, IndexIn, IndexOut, M, Suffix,
+        noeud(etiq_formule(alpha, alpha1, alpha2, A impl B, 0, NomComplet),
+            [ArbreA, ArbreB])) :-
+    construire_nom(IndexIn, Suffix, NomComplet),
+    Index1 is IndexIn + 1,
+    etiqueter(A, 1, Index1, IndexMid, M, Suffix, ArbreA),
+    etiqueter(B, 0, IndexMid, IndexOut, M, Suffix, ArbreB).
+\end{lstlisting}
+
+\subsubsection{Les règles de type Bêta ($\beta$)}
+
+Les règles $\beta$ représentent des décompositions disjonctives (branchement). Elles créent une bifurcation dans l'arbre des chemins. Nous retrouvons ici la disjonction de polarité 1 ($A \lor B, 1$) ou l'implication de polarité 0 ($A \rightarrow B, 1$) :
+
+\begin{lstlisting}
+% Exemple : Disjonction affirmee (A ou B, 1)
+etiqueter(A ou B, 1, IndexIn, IndexOut, M, Suffix,
+        noeud(etiq_formule(beta, beta1, beta2, A ou B, 1, NomComplet),
+            [ArbreA, ArbreB])) :-
+    construire_nom(IndexIn, Suffix, NomComplet),
+    Index1 is IndexIn + 1,
+    etiqueter(A, 1, Index1, IndexMid, M, Suffix, ArbreA),
+    etiqueter(B, 1, IndexMid, IndexOut, M, Suffix, ArbreB).
+\end{lstlisting}
+
+\subsubsection{Cas de la négation et des feuilles}
+
+La négation est traitée de manière transparente en inversant la polarité du reste de la formule. Ce processus se poursuit jusqu'à atteindre un \textbf{littéral} (atome). À ce stade, le prédicat crée une \texttt{feuille}, marquant la fin de la branche syntaxique.
+
+\begin{lstlisting}
+% Traitement des atomes (Feuilles)
+etiqueter(A, Polarite, Index, IndexOut, _, Suffix, 
+         feuille(etiq_formule(atome, none, none, A, Polarite, NomComplet))) :-
+    est_litteral(A),
+    construire_nom(Index, Suffix, NomComplet),
+    IndexOut is Index + 1.
+\end{lstlisting}
+
+\subsection{Structures de données : Représentation des arbres}
+% Décris la manière dont l'arbre syntaxique et l'arbre des chemins sont représentés en Prolog (ex: listes imbriquées, termes spécifiques...).
+
+\subsection{Prédicats utilitaires}
+% Présente les fonctions transversales : manipulation de listes, affichages, gestion de la polarité des littéraux, etc.
+
+
+% ==============================================================================
+% PARTIE II : LOGIQUE PROPOSITIONNELLE
+% ==============================================================================
+\section{En Logique Propositionnelle}
+
+Cette section détaille l'implémentation de la méthode des connexions restreinte à la logique propositionnelle.
+
+\subsection{Construction de l'arbre syntaxique indexé}
+% Comment le programme passe de la formule initiale à l'arbre développé.
+
+\subsection{Génération de l'arbre des chemins}
+% Explication de l'algorithme qui parcourt l'arbre syntaxique pour extraire les chemins (matrice).
+
+\subsection{Recherche de connexions et validation}
+% Comment le programme cherche une paire de littéraux complémentaires sur chaque chemin et comment il valide la preuve.
+
+
+% ==============================================================================
+% PARTIE III : LOGIQUE DES PRÉDICATS (LPO)
+% ==============================================================================
+\section{En Logique du Premier Ordre (LPO)}
+
+La logique du premier ordre introduit la gestion des quantificateurs, ce qui complexifie significativement la méthode des connexions.
+
+\subsection{Adaptation de l'arbre indexé}
+% Parle des variables libres, de l'instanciation, et des règles Gamma/Delta.
+
+\subsection{Évolution de l'arbre des chemins}
+% Précise s'il y a eu des modifications dans la collecte des chemins pour le premier ordre.
+
+\subsection{Recherche de connexions orientée LPO}
+% Différence majeure avec la prop : la recherche de connexions n'est plus une simple égalité syntaxique, mais nécessite l'unification.
+
+\subsection{Unification, graphe de dépendance et multiplicité}
+% C'est le cœur de votre travail sur la LPO !
+% - Explication de l'unification
+% - Gestion de la multiplicité (copies des formules gamma avec les suffixes _1, _2...)
+% - Détection des cycles de dépendance (Skolémisation/règles delta) avec le graphe.
+
+
+% ==============================================================================
+% CONCLUSION
+% ==============================================================================
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+
+% Bilan du projet, difficultés rencontrées, ce que vous avez appris, et éventuelles pistes d'amélioration.
+
+\end{document}
