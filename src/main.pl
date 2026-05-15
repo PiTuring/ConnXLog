@@ -180,8 +180,10 @@ trace_verif(Formule, Logique) :-
 % ?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
 % ?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
 % lpo
-?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
-?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
+% ?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
+% ?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
 % ?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
 % ?- trace_verif((x pt (y ie (p(x,y)))) impl (y ie (x pt (p(x,y)))), lpo). % Test de cycle
-?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
+% ?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
+
+?- verif((p impl q) impl ((q impl r) impl (p impl r))).
