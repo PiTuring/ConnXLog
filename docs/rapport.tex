@@ -85,14 +85,6 @@
 \newpage
 
 % ==============================================================================
-% INTRODUCTION (Optionnelle mais recommandée)
-% ==============================================================================
-\section*{Introduction}
-\addcontentsline{toc}{section}{Introduction}
-
-% Intro
-
-% ==============================================================================
 % PARTIE I : LE SOCLE COMMUN
 % ==============================================================================
 \section{Le socle commun : Logique Propositionnelle et Premier Ordre}
@@ -241,6 +233,29 @@ Nous avons créé tout un module d'affichage pour suivre les traces de la métho
     \item \textbf{Nettoyage des variables} : \texttt{nettoyer\_formule/2} transforme les structures internes complexes (utilisées pour l'unification) en noms lisibles pour l'utilisateur final.
     \item \textbf{Système d'Echo} : Nous avons réutilisé le système d'affichage donné pour le projet d'algorithme d'unification de Martelli-Montanari au 1er semestre, dans le cadre de l'UE \textit{Logique et Modèles de Calculs}.
 \end{itemize}
+
+\subsection{Le module principal et l'exécution (\texttt{main.pl})}
+
+Pour orchestrer l'ensemble de ces outils et faciliter nos phases de tests, nous avons regroupé les points d'entrée du programme au sein d'un module central : \texttt{main.pl}.
+
+Le prédicat principal du programme est \texttt{verifier(+Formule, +Logique)}, où l'argument \texttt{Logique} prend la valeur \texttt{prop} ou \texttt{lpo}. Il se charge d'exécuter séquentiellement les grandes étapes de la méthode des connexions :
+\begin{enumerate}
+    \item La génération de l'arbre syntaxique indexé.
+    \item La construction de l'arbre des chemins.
+    \item La recherche de connexions et l'évaluation finale.
+\end{enumerate}
+
+Pour nos tests et l'affichage, nous avons mis en place un mode "trace" via le prédicat \texttt{trace\_verif}. Ce dernier active les variables d'affichage (système d'écho) avant de lancer l'évaluation, permettant de visualiser la construction des arbres, les étapes d'unification et le graphe de dépendance directement dans la console.
+
+\begin{lstlisting}
+% Point d'entree avec affichage detaille (trace)
+trace_verif(Formule) :- trace_verif(Formule, prop).
+
+trace_verif(Formule, Logique) :-
+      activer_echo,
+      verifier(Formule, Logique),
+      desactiver_echo.
+\end{lstlisting}
 
 % ==============================================================================
 % PARTIE II : LOGIQUE PROPOSITIONNELLE
