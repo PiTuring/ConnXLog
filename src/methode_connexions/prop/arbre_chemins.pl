@@ -1,6 +1,6 @@
 % methode_connexions/prop/arbre_chemins.pl
 
-:- module(arbre_chemins, [
+:- module(arbre_chemins_prop, [
     generer_arbre_chemins/2,
     afficher_arbre_chemins/1
 ]).
@@ -42,19 +42,20 @@ developper(Ensemble, ArbreChemins) :-
       premier_noeud(Ensemble, Noeud, EnsembleSansNoeud),
       noeud_etiquette(Noeud, Etiquette),
       etiq_type_principal(Etiquette, TypePrincipal),
-      noeud_gauche(Noeud, FilsGauche),
-      noeud_droit(Noeud, FilsDroit),
+      noeud_fils(Noeud, ListeFils),
       !,
       (
             TypePrincipal = alpha ->
-                  NouvelEnsemble = [FilsGauche, FilsDroit | EnsembleSansNoeud],
+                  append(ListeFils, EnsembleSansNoeud, NouvelEnsemble),
                   developper(NouvelEnsemble, SousArbre),
-                  ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbre, nil)
+                  ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), [SousArbre])
             ; % beta
-                  developper([FilsGauche | EnsembleSansNoeud], SousArbreGauche),
-                  developper([FilsDroit | EnsembleSansNoeud], SousArbreDroit),
-                  ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), SousArbreGauche, SousArbreDroit)
+                  maplist(developper_beta(EnsembleSansNoeud), ListeFils, ListeSousArbres),
+                  ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), ListeSousArbres)
       ).
+
+developper_beta(ResteEnsemble, Fils, SousArbre) :-
+      developper([Fils | ResteEnsemble], SousArbre).
 
 % ============================================================================
 % premier_noeud(+Ensemble, -Noeud, -EnsembleSansNoeud)
@@ -77,7 +78,7 @@ afficher_arbre_chemins(feuille(etiq_chemin_final(Feuilles)), Prefixe, _) :-
       format("chemin final : "),
       afficher_feuilles(Feuilles),
       nl.
-afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin), FilsGauche, FilsDroit), Prefixe, PrefixeSuite) :-
+afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin),ListeFils), Prefixe, PrefixeSuite) :-
       noeud_etiquette(Noeud, Etiquette),
       etiq_index(Etiquette, Index),
       etiq_type_principal(Etiquette, Type),
@@ -85,22 +86,21 @@ afficher_arbre_chemins(noeud(etiq_chemin(Noeud, Chemin), FilsGauche, FilsDroit),
       write('{'),
       afficher_chemin(Chemin),
       write('}'), nl,
+      afficher_liste_fils_chemins(ListeFils, PrefixeSuite).
 
-      ( FilsDroit \= nil ->
-            atom_concat(PrefixeSuite, '├── ', PrefixeGauche),
-            atom_concat(PrefixeSuite, '│   ', PrefixeSuiteGauche),
-            atom_concat(PrefixeSuite, '└── ', PrefixeDroit),
-            atom_concat(PrefixeSuite, '    ', PrefixeSuiteDroit),
-
-            afficher_arbre_chemins(FilsGauche, PrefixeGauche, PrefixeSuiteGauche),
-            afficher_arbre_chemins(FilsDroit, PrefixeDroit, PrefixeSuiteDroit)
-      ;
-            atom_concat(PrefixeSuite, '└── ', PrefixeUnique),
-            atom_concat(PrefixeSuite, '    ', PrefixeSuiteUnique),
-
-            afficher_arbre_chemins(FilsGauche, PrefixeUnique, PrefixeSuiteUnique)
-      ).
-
+% Helper pour afficher les branches de l'arbre des chemins
+afficher_liste_fils_chemins([], _).
+afficher_liste_fils_chemins([F], PrefixeSuite) :-
+      !,
+      atom_concat(PrefixeSuite, '└── ', Prefixe),
+      atom_concat(PrefixeSuite, '    ', Suite),
+      afficher_arbre_chemins(F, Prefixe, Suite).
+afficher_liste_fils_chemins([F|R], PrefixeSuite) :-
+      atom_concat(PrefixeSuite, '├── ', Prefixe),
+      atom_concat(PrefixeSuite, '│   ', Suite),
+      afficher_arbre_chemins(F, Prefixe, Suite),
+      afficher_liste_fils_chemins(R, PrefixeSuite).
+           
 % ============================================================================
 % afficher_chemin(+Chemin)
 % ============================================================================    
@@ -114,9 +114,9 @@ afficher_chemin([H | Reste]) :-
                   etiq_index(Etiquette, Index)
       ), 
       (
-            Reste \= [] -> format("a~w, ", [Index])
+            Reste \= [] -> format("~w, ", [Index])
             ;
-                  format("a~w", [Index])
+                  format("~w", [Index])
       ),
       afficher_chemin(Reste).
 

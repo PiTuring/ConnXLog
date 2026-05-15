@@ -18,6 +18,7 @@
 :- include('../../core/utils').
 :- use_module('../../core/arbre').
 :- use_module('../../core/regles_communes'). 
+:- multifile regles_communes:etiqueter/7.
 
 % ============================================================================
 % Construction de l'arbre syntaxique indexé en LPO
@@ -41,7 +42,6 @@ etiq_formule(etiq_formule(_, _, _, F, _, _), F).
 etiq_polarite(etiq_formule(_, _, _, _, P, _), P).
 etiq_index(etiq_formule(_, _, _, _, _, I), I).
 
-:- multifile regles_communes:etiqueter/7.
 
 % ============================================================================
 %   generer_fils_gamma(Compteur, Formule, Variable, Polarite, IndexIn, IndexOut, MultipliciteInitiale, ListeFils)

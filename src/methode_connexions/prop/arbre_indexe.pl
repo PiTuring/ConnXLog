@@ -1,11 +1,9 @@
 % methode_connexions/prop/arbre_indexe.pl
 
-:- module(arbre_indexe, [
+:- module(arbre_indexe_prop, [
     generer_arbre_indexe/2,
 
     afficher_arbre_indexe/1,
-    afficher_arbre_indexe/3,
-    afficher_arbre_indexe/4,
 
     etiq_type_principal/2,
     etiq_type_secondaire1/2,
@@ -18,6 +16,7 @@
 :- include('../../core/utils').
 :- use_module('../../core/arbre').
 :- use_module('../../core/regles_communes'). 
+:- multifile regles_communes:etiqueter/7.
 
 % ============================================================================
 % Construction de l'arbre syntaxique indexé 
@@ -48,7 +47,7 @@ etiq_index(etiq_formule(_, _, _, _, _, I), I).
 %   Index initial = 0
 % ============================================================================
 generer_arbre_indexe(Formule, Arbre) :-
-    etiqueter(Formule, 0, 0, _, Arbre).
+    regles_communes:etiqueter(Formule, 0, 0, _, none, none, Arbre).
 
 % ============================================================================
 % AFFICHAGE ARBRE 
@@ -57,30 +56,21 @@ generer_arbre_indexe(Formule, Arbre) :-
 afficher_arbre_indexe(Arbre) :-
     afficher_arbre_indexe(Arbre, '', '').
 
-afficher_arbre_indexe(feuille(Etiquette), Prefixe, _) :-
-    etiq_index(Etiquette, Index),
-    etiq_formule(Etiquette, Formule),
-    etiq_polarite(Etiquette, Polarite),
-    write(Prefixe),
-    ecrire_formule(Formule),
-    format("  [a~w, ~w, _, ", [Index, Polarite]),
-    ecrire_type('_'),
-    write(']'), nl.
-
 afficher_arbre_indexe(feuille(Etiquette), Prefixe, _, SousType) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_polarite(Etiquette, Polarite),
     write(Prefixe),
     ecrire_formule(Formule),
-    format("  [a~w, ~w, _, ", [Index, Polarite]),
+    format("  [~w, ~w, _, ", [Index, Polarite]),
     ecrire_type(SousType),
     write(']'), nl.
 
-afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Prefixe, PrefixeSuite) :-
-    afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Prefixe, PrefixeSuite, none).
+% Cas noeud : appel depuis la racine (initiation du SousType à 'none')
+afficher_arbre_indexe(noeud(Etiquette, ListeFils), Prefixe, PrefixeSuite) :-
+    afficher_arbre_indexe(noeud(Etiquette, ListeFils), Prefixe, PrefixeSuite, none).
 
-afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Prefixe, PrefixeSuite, SousType) :-
+afficher_arbre_indexe(noeud(Etiquette, ListeFils), Prefixe, PrefixeSuite, SousType) :-
     etiq_index(Etiquette, Index),
     etiq_formule(Etiquette, Formule),
     etiq_type_principal(Etiquette, Type),
@@ -89,14 +79,32 @@ afficher_arbre_indexe(noeud(Etiquette, Gauche, Droit), Prefixe, PrefixeSuite, So
     etiq_type_secondaire2(Etiquette, TypeSecondaire2),
     write(Prefixe),
     ecrire_formule(Formule),
-    format("  [a~w, ~w, ", [Index, Polarite]),
+    format("  [~w, ~w, ", [Index, Polarite]),
     ecrire_type(Type),
     write(', '),
     ecrire_type(SousType),
     write(']'), nl,
-    atom_concat(PrefixeSuite, '├── ', PrefixeGauche),
-    atom_concat(PrefixeSuite, '│   ', PrefixeSuiteGauche),
-    atom_concat(PrefixeSuite, '└── ', PrefixeDroit),
-    atom_concat(PrefixeSuite, '    ', PrefixeSuiteDroit),
-    afficher_arbre_indexe(Gauche, PrefixeGauche, PrefixeSuiteGauche, TypeSecondaire1),
-    afficher_arbre_indexe(Droit,  PrefixeDroit, PrefixeSuiteDroit, TypeSecondaire2).
+    afficher_liste_fils(ListeFils, PrefixeSuite, TypeSecondaire1, TypeSecondaire2).
+
+
+% ============================================================================
+%   afficher_liste_fils(+ListeFils, +PrefixeSuite, +TypeSec1, +TypeSec2)
+% ============================================================================
+afficher_liste_fils([], _, _, _).
+
+% Le premier fils reçoit TypeSec1 (ex: alpha1), le second reçoit TypeSec2 (ex: alpha2).
+afficher_liste_fils([Fils1, Fils2], PrefixeSuite, TypeSec1, TypeSec2) :-
+    !,
+    atom_concat(PrefixeSuite, '├── ', PrefixeFils1),
+    atom_concat(PrefixeSuite, '│   ', SuiteFils1),
+    afficher_arbre_indexe(Fils1, PrefixeFils1, SuiteFils1, TypeSec1),
+    atom_concat(PrefixeSuite, '└── ', PrefixeFils2),
+    atom_concat(PrefixeSuite, '    ', SuiteFils2),
+    afficher_arbre_indexe(Fils2, PrefixeFils2, SuiteFils2, TypeSec2).
+
+afficher_liste_fils([SeulFils], Suite, T1, _) :-
+    !,
+    atom_concat(Suite, '└── ', P1),
+    atom_concat(Suite, '    ', S1),
+    afficher_arbre_indexe(SeulFils, P1, S1, T1).
+

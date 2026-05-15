@@ -27,18 +27,14 @@ verifier_connexions(_, invalide).
 % ============================================================================
 % tous_chemins_connectes(+ArbreChemins)
 %
-% Vari si tous les chemins finaux de l'arbre contiennent une connexion.
+% Vrai si tous les chemins finaux de l'arbre contiennent une connexion.
 % ============================================================================
 % Lorsqu'on est sur un chemin final, on vérifie si il existe une connexion
 tous_chemins_connectes(feuille(etiq_chemin_final(Feuilles))) :-
 	chemin_connecte(Feuilles).
 % Sinon on vérifie dans les fils
-tous_chemins_connectes(noeud(_, FilsGauche, nil)) :-
-	tous_chemins_connectes(FilsGauche).
-tous_chemins_connectes(noeud(_, FilsGauche, FilsDroit)) :-
-	FilsDroit \= nil,
-	tous_chemins_connectes(FilsGauche),
-	tous_chemins_connectes(FilsDroit).
+tous_chemins_connectes(noeud(_, ListeFils)) :-
+	maplist(tous_chemins_connectes, ListeFils).
 
 % ============================================================================
 % chemin_connecte(+Feuilles)
@@ -92,9 +88,10 @@ afficher_connexions(feuille(etiq_chemin_final(Feuilles)), N, N1) :-
             ;   
                   format("aucune connexion.~n")
     ).
-afficher_connexions(noeud(_, FilsGauche, nil), N, N1) :-
-	afficher_connexions(FilsGauche, N, N1).
-afficher_connexions(noeud(_, FilsGauche, FilsDroit), N, N2) :-
-	FilsDroit \= nil,
-	afficher_connexions(FilsGauche, N, N1),
-	afficher_connexions(FilsDroit, N1, N2).
+afficher_connexions(noeud(_, ListeFils), N, N1) :-
+	afficher_liste_connexions(ListeFils, N, N1).
+
+afficher_liste_connexions([], N, N).
+afficher_liste_connexions([F|R], NIn, NOut) :-
+    afficher_connexions(F, NIn, NMid),
+    afficher_liste_connexions(R, NMid, NOut).

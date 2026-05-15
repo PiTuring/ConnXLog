@@ -40,9 +40,9 @@ verifier(Formule, prop) :-
       echo_nl,
       echo("--- Arbre syntaxique indexé ---"),
       echo_nl,
-      generer_arbre_indexe(Formule, ArbreIndexe),
+      arbre_indexe_prop:generer_arbre_indexe(Formule, ArbreIndexe),
       (
-            echo_on -> afficher_arbre_indexe(ArbreIndexe)
+            echo_on -> arbre_indexe_prop:afficher_arbre_indexe(ArbreIndexe)
             ;
             true
       ),
@@ -51,9 +51,9 @@ verifier(Formule, prop) :-
       echo_nl,
       echo("--- Arbre des chemins ---"),
       echo_nl,
-      generer_arbre_chemins(ArbreIndexe, ArbreChemins),
+      arbre_chemins_prop:generer_arbre_chemins(ArbreIndexe, ArbreChemins),
       (
-            echo_on -> afficher_arbre_chemins(ArbreChemins)
+            echo_on -> arbre_chemins_prop:afficher_arbre_chemins(ArbreChemins)
             ;
             true
       ),
@@ -63,7 +63,7 @@ verifier(Formule, prop) :-
       echo("--- Recherche de connexions ---"),
       echo_nl,
       (
-            echo_on -> afficher_connexions(ArbreChemins)
+            echo_on -> recherche_connexions:afficher_connexions(ArbreChemins)
             ;
             true
       ),
@@ -71,7 +71,7 @@ verifier(Formule, prop) :-
 
       write("--- Résultat ---"),
       nl,
-      verifier_connexions(ArbreChemins, Resultat),
+      recherche_connexions:verifier_connexions(ArbreChemins, Resultat),
       (
             Resultat = valide -> write("La formule est valide.")
             ;
@@ -170,15 +170,15 @@ verif(Formule, Logique) :-
 % Logique : prop | lpo (si vide, prop par défaut)
 % Applique la méthode des connexions sans trace.
 % ============================================================================
-trace_verif(Formule) :- verif(Formule, prop). % Prop par défaut
+trace_verif(Formule) :- trace_verif(Formule, prop). % Prop par défaut
 trace_verif(Formule, Logique) :-
       set_echo, % Active la trace par echo/1
       verifier(Formule, Logique).
 
 % Tests avec trace de l'exemple du cours et du TD :
 % prop
-?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
-?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
+% ?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
+% ?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
 % lpo
 % ?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
 % ?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
