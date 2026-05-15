@@ -191,7 +191,7 @@ feuille_etiquette(feuille(E), E).
 Cette implémentation est utilisée à deux étapes clés du programme :
 \begin{enumerate}
     \item \textbf{L'Arbre Indexé} : Chaque nœud correspond à une sous-formule et chaque feuille à un atome avec sa polarité. C'est la base de la décomposition logique.
-    \item \textbf{L'Arbre des Chemins} : Il s'agit d'une transformation de l'arbre précédent où chaque nœud représente l'état des chemins (la "matrice") à un point donné de l'exploration.
+    \item \textbf{L'Arbre des Chemins} : Il s'agit d'une transformation de l'arbre précédent où chaque nœud représente l'état des chemins à un point donné de l'exploration.
 \end{enumerate}
 
 Cette uniformité de structure facilite l'écriture des algorithmes de parcours de profondeur, car les mêmes prédicats de navigation peuvent être réutilisés sur les deux types d'arbres.
@@ -250,14 +250,152 @@ Nous avons créé tout un module d'affichage pour suivre les traces de la métho
 Cette section détaille l'implémentation de la méthode des connexions restreinte à la logique propositionnelle.
 
 \subsection{Construction de l'arbre syntaxique indexé}
-% Comment le programme passe de la formule initiale à l'arbre développé.
+
+La première étape de la méthode consiste à transformer la formule logique brute en un arbre syntaxique dont chaque nœud contient les informations nécessaires à la suite de la méthode. Cette structure, appelée \textbf{Arbre Indexé}, sert de base à toutes les étapes ultérieures (génération des chemins et recherche de connexions).
+
+\subsubsection{Structure de l'étiquette enrichie}
+
+Chaque nœud ou feuille de l'arbre contiennent une étiquette construite comme cela :
+\begin{center}
+    \texttt{etiq\_formule(TypePrincipal, TypeSec1, TypeSec2, Formule, Polarité, Index)}
+\end{center}
+
+\begin{itemize}
+    \item \textbf{TypePrincipal} : Identifie la règle applicable ($\alpha, \beta$ pour la propositionnelle).
+    \item \textbf{Types Secondaires} : Précisent le rôle des fils (ex: $\alpha_1$ ou $\alpha_2$).
+    \item \textbf{Polarité} : Indique si la formule est affirmée ($1$) ou niée ($0$).
+    \item \textbf{Index} : Un entier unique attribué selon un parcours en profondeur, permettant d'identifier précisément chaque position dans l'arbre.
+\end{itemize}
+
+\subsubsection{Initialisation et Génération}
+
+Le prédicat \texttt{generer\_arbre\_indexe/2} lance le processus en initialisant la polarité à $0$. Ce choix s'explique par la nature de la méthode des connexions : pour prouver qu'une formule est une tautologie, on cherche à montrer que sa négation (polarité 0) mène toujours à une contradiction.
+
+\begin{lstlisting}
+% Initialisation de la construction
+generer_arbre_indexe(Formule, Arbre) :-
+    regles_communes:etiqueter(Formule, 0, 0, _, none, none, Arbre).
+\end{lstlisting}
+
+Le prédicat fait appel au module \texttt{regles\_communes} (décrit en Partie I) pour utiliser le prédicat d'étiquetage.
+
+\subsubsection{Récupération par les accesseurs}
+
+Pour manipuler cette structure complexe sans casser l'encapsulation, nous avons mis en place des accesseurs. Ils permettent d'extraire une information précise sans avoir à connaître l'ordre des arguments dans le terme \texttt{etiq\_formule}.
+
+\begin{lstlisting}
+% Exemples d'accesseurs
+etiq_type_principal(etiq_formule(T, _, _, _, _, _), T).
+etiq_formule(etiq_formule(_, _, _, F, _, _), F).
+etiq_index(etiq_formule(_, _, _, _, _, I), I).
+\end{lstlisting}
+
+Nous avons mis en place ce système en prévoyant une potentielle évolution vers la logique des prédicats, sans avoir besoin de changer toute la logique métier.
 
 \subsection{Génération de l'arbre des chemins}
-% Explication de l'algorithme qui parcourt l'arbre syntaxique pour extraire les chemins (matrice).
+
+Une fois l'arbre syntaxique indexé construit, l'étape suivante consiste à extraire l'ensemble des chemins sémantiques de la formule. Nous enregistrons ces chemins dans un arbre appelé \textbf{Arbre des chemins}.
+
+\subsubsection{Le développement de chemin}
+
+L'objectif est de parcourir l'arbre syntaxique et d'appliquer les règles de réduction de manière à isoler tous les ensembles de littéraux possibles qui, s'ils sont tous validés, prouvent la formule. Le cœur de cet algorithme réside dans le prédicat \texttt{developper/2}.
+
+Ce prédicat manipule un \textit{Ensemble} de nœuds issus de l'arbre indexé :
+\begin{itemize}
+    \item \textbf{Cas de base} : Si l'ensemble ne contient plus que des feuilles (des littéraux), le chemin est complet. On crée une feuille \texttt{etiq\_chemin\_final} contenant la liste de ces littéraux.
+    \item \textbf{Récursion} : On extrait le premier nœud de l'ensemble pour le traiter selon son type principal.
+\end{itemize}
+
+\subsubsection{Traitement des règles $\alpha$ et $\beta$}
+
+La structure de l'arbre des chemins dépend directement de la nature du connecteur traité :
+
+\begin{enumerate}
+    \item \textbf{Règle $\alpha$ (Conjonctive)} : Les composants de la formule $\alpha$ (ex: $A$ et $B$ pour $A \land B$) doivent appartenir au même chemin. On ajoute donc les fils à l'ensemble courant et on continue le développement linéairement.
+    \item \textbf{Règle $\beta$ (Disjonctive)} : La formule $\beta$ crée une bifurcation. Chaque fils de la règle $\beta$ engendre un nouveau chemin indépendant.
+\end{enumerate}
+
+% \begin{lstlisting}
+% % Traitement recursif des noeuds
+% developper(Ensemble, ArbreChemins) :-
+%       premier_noeud(Ensemble, Noeud, EnsembleSansNoeud),
+%       noeud_etiquette(Noeud, Etiquette),
+%       etiq_type_principal(Etiquette, Type),
+%       noeud_fils(Noeud, ListeFils),
+%       !,
+%       (
+%             Type = alpha ->
+%                   % Regle Alpha : on fusionne les fils dans l'ensemble courant
+%                   append(ListeFils, EnsembleSansNoeud, NouvelEnsemble),
+%                   developper(NouvelEnsemble, SousArbre),
+%                   ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), [SousArbre])
+%             ; 
+%             % Regle Beta : on cree autant de branches que de fils
+%                   maplist(developper_beta(EnsembleSansNoeud), ListeFils, ListeSousArbres),
+%                   ArbreChemins = noeud(etiq_chemin(Noeud, Ensemble), ListeSousArbres)
+%       ).
+% \end{lstlisting}
+
+\subsubsection{Sémantique de l'Arbre des Chemins}
+
+Contrairement à l'arbre syntaxique qui représente la structure logique de la formule, l'arbre des chemins représente la \textbf{recherche de preuve} :
+\begin{itemize}
+    \item Chaque nœud de cet arbre représente une étape de réduction (une application de règle).
+    \item Chaque feuille de cet arbre représente un \textbf{chemin complet}.
+\end{itemize}
+
+Pour que la formule soit prouvée, chaque feuille de cet arbre des chemins devra contenir au moins une \textit{connexion} (une paire de littéraux complémentaires). Cette structure permet une séparation claire entre la phase de décomposition logique et la phase de recherche de connexions que nous détaillerons dans la section suivante.
 
 \subsection{Recherche de connexions et validation}
-% Comment le programme cherche une paire de littéraux complémentaires sur chaque chemin et comment il valide la preuve.
 
+La dernière étape de la méthode des connexions en logique propositionnelle consiste à vérifier si l'arbre des chemins constitue une preuve valide. Pour qu'une formule soit prouvée, \textit{tous} les chemins générés doivent être "fermés", c'est-à-dire qu'ils doivent contenir au moins une connexion.
+
+\subsubsection{Définition d'une connexion}
+
+Une connexion est une paire de littéraux (atomes) complémentaires présents sur un même chemin. Dans notre représentation, cela se traduit par deux feuilles ayant la même formule mais des polarités opposées ($1$ et $0$). 
+
+Le prédicat \texttt{connexion/3} est chargé de trouver cette paire au sein d'une liste de feuilles. Il exploite le non-déterminisme de Prolog en utilisant \texttt{select/3} et \texttt{member/2} pour extraire deux éléments distincts, puis vérifie leurs propriétés via les accesseurs de l'étiquette :
+
+\begin{lstlisting}
+% Recherche d'une paire complementaire
+connexion(Feuilles, F1, F2) :-
+    % Extraction d'une premiere feuille
+    select(F1, Feuilles, Reste),
+    feuille_etiquette(F1, Etiquette1),
+    etiq_formule(Etiquette1, Symbole),
+    etiq_polarite(Etiquette1, Polarite1),
+    
+    % Calcul de la polarite opposee attendue
+    Polarite2 is 1 - Polarite1,
+    
+    % Recherche d'une seconde feuille correspondante
+    member(F2, Reste),
+    feuille_etiquette(F2, Etiquette2),
+    etiq_formule(Etiquette2, Symbole),
+    etiq_polarite(Etiquette2, Polarite2).
+\end{lstlisting}
+
+\subsubsection{Validation globale des chemins}
+
+Pour valider la preuve entière, l'algorithme doit parcourir l'arbre des chemins jusqu'à ses feuilles. Ce parcours est réalisé par le prédicat \texttt{tous\_chemins\_connectes/1}.
+
+Lorsqu'il rencontre un nœud de branchement, il délègue récursivement la vérification à tous ses fils grâce à \texttt{maplist/2}. Lorsqu'il atteint une feuille finale (\texttt{etiq\_chemin\_final}), il vérifie qu'une connexion existe pour ce chemin :
+
+\begin{lstlisting}
+% Verification sur un chemin final
+tous_chemins_connectes(feuille(etiq_chemin_final(Feuilles))) :-
+    chemin_connecte(Feuilles).
+
+% Recursion sur l'arbre des chemins
+tous_chemins_connectes(noeud(_, ListeFils)) :-
+    maplist(tous_chemins_connectes, ListeFils).
+\end{lstlisting}
+
+Une optimisation importante réside dans le prédicat \texttt{chemin\_connecte/1} (qui appelle \texttt{connexion/3}). L'utilisation d'un \textit{cut} (\texttt{!}) permet de stopper la recherche dès qu'une première connexion est trouvée sur le chemin courant. En effet, une seule connexion suffit à fermer un chemin, il est donc inutile d'explorer les autres paires possibles.
+
+\subsubsection{Conclusion de la preuve}
+
+Le point d'entrée de ce processus est \texttt{verifier\_connexions/2}. Il unifie son résultat avec l'atome \texttt{valide} si le prédicat \texttt{tous\_chemins\_connectes} réussit sur l'arbre complet, confirmant ainsi que la matrice est fermée (et donc que la formule de départ est bien une tautologie). Dans le cas contraire, si au moins un chemin reste ouvert, le résultat retourné est \texttt{invalide}.
 
 % ==============================================================================
 % PARTIE III : LOGIQUE DES PRÉDICATS (LPO)
