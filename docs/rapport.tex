@@ -402,23 +402,112 @@ Le point d'entrée de ce processus est \texttt{verifier\_connexions/2}. Il unifi
 % ==============================================================================
 \section{En Logique du Premier Ordre (LPO)}
 
-La logique du premier ordre introduit la gestion des quantificateurs, ce qui complexifie significativement la méthode des connexions.
+Le passage de la logique propositionnelle à la logique du premier ordre introduit la gestion des quantificateurs ($\forall$ et $\exists$). Cette évolution complexifie significativement la méthode des connexions : il ne s'agit plus de chercher une simple égalité syntaxique stricte entre deux atomes indépendamment sur chaque chemin, mais de trouver une \textit{substitution} globale valide (unification) qui rende ces atomes complémentaires, tout en respectant des contraintes strictes de dépendance.
 
-\subsection{Adaptation de l'arbre indexé}
-% Parle des variables libres, de l'instanciation, et des règles Gamma/Delta.
+\subsection{Adaptations structurelles pour la LPO}
 
-\subsection{Évolution de l'arbre des chemins}
-% Précise s'il y a eu des modifications dans la collecte des chemins pour le premier ordre.
+Pour supporter ces nouveaux concepts sans avoir à réécrire l'intégralité de la logique de parcours, nous avons fait évoluer nos structures de base.
 
-\subsection{Recherche de connexions orientée LPO}
-% Différence majeure avec la prop : la recherche de connexions n'est plus une simple égalité syntaxique, mais nécessite l'unification.
+\subsubsection{Traçabilité des variables : \texttt{var(Position, V)}}
 
-\subsection{Unification, graphe de dépendance et multiplicité}
-% C'est le cœur de votre travail sur la LPO !
-% - Explication de l'unification
-% - Gestion de la multiplicité (copies des formules gamma avec les suffixes _1, _2...)
-% - Détection des cycles de dépendance (Skolémisation/règles delta) avec le graphe.
+En LPO, lors de l'application d'une règle, les variables liées par des quantificateurs deviennent des variables libres dans la formule. Pour pouvoir plus tard vérifier les contraintes liées à l'ordre d'instanciation (règles $\delta$), une simple variable Prolog anonyme ne suffit pas. 
 
+Nous avons donc encapsulé chaque variable générée dans une structure \texttt{var(NomPosition, V)}, où :
+\begin{itemize}
+    \item \texttt{NomPosition} est l'index spatial unique du nœud dans l'arbre syntaxique (ex: \texttt{a1}).
+    \item \texttt{V} est la véritable variable logique Prolog sur laquelle l'algorithme d'unification va travailler.
+\end{itemize}
+
+\subsubsection{Transparence de l'arbre des chemins}
+
+L'algorithme de la section 2.2 parcourait déjà des listes de nœuds. Grâce à notre choix initial de représenter les arbres avec des nœuds n-aires (\texttt{noeud(Etiquette, ListeFils)}), nous pouvons très naturellement utiliser ces arbres pour la LPO sans rien changer.
+
+\subsection{La gestion de la Multiplicité}
+
+Contrairement à la logique propositionnelle où chaque règle ne s'applique qu'une seule fois, la règle $\gamma$ (quantificateur universel $\forall$) stipule qu'une formule peut avoir besoin d'être instanciée plusieurs fois avec des termes différents pour fermer tous les chemins. Le nombre d'instanciations nécessaires est appelé \textbf{Multiplicité} ($M$).
+
+\subsubsection{La boucle de recherche itérative}
+
+Puisqu'il est théoriquement indécidable de connaître à l'avance la multiplicité exacte requise pour prouver une formule, nous avons mis en place une boucle d'approfondissement itératif dans le module principal (\texttt{main.pl}).
+
+Le prédicat \texttt{verifier\_boucle\_lpo/3} tente de prouver la formule avec $M=1$. En cas d'échec (et si la limite n'est pas atteinte), il relance l'intégralité de la construction de l'arbre et de la recherche avec $M=2$, $M=3$, etc.
+
+\begin{lstlisting}
+% Boucle sur la multiplicite
+verifier_boucle_lpo(Formule, M, Limite) :-
+    % Etape 1 : Arbre indexe avec multiplicite M
+    arbre_indexe_lpo:generer_arbre_indexe(Formule, M, ArbreIndexe),
+    % Etape 2 : Arbre des chemins
+    arbre_chemins_lpo:generer_arbre_chemins(ArbreIndexe, ArbreChemins),
+    % Etape 3 : Recherche de connexions
+    ( recherche_connexions_lpo:verifier_connexions(ArbreIndexe, ArbreChemins, valide) ->
+        format("Preuve valide avec multiplicite M = ~w.~n", [M])
+    ;
+        M1 is M + 1,
+        M1 =< Limite,
+        verifier_boucle_lpo(Formule, M1, Limite)
+    ).
+\end{lstlisting}
+
+\subsubsection{Génération des copies multiples}
+
+Côté arbre indexé, le prédicat initial devient \texttt{generer\_arbre\_indexe/3} pour propager cette multiplicité. Lorsqu'une règle $\gamma$ est rencontrée, le programme boucle pour créer $M$ copies exactes du sous-arbre, chacune étiquetée avec un suffixe unique (\texttt{\_1}, \texttt{\_2}, etc.) pour garantir que les variables \texttt{var(Pos, V)} de chaque copie restent indépendantes et ne s'unifient pas accidentellement entre elles prématurément.
+
+\subsection{Unification et Graphe de Dépendance}
+
+Cependant, la recherche de connexion en LPO est plus compliquée qu'en logique propositionnelle. Trouver une paire de littéraux de polarité opposée n'est plus suffisant, il faut s'assurer que leurs arguments peuvent être unifiés globalement sur l'ensemble des chemins.
+
+\subsubsection{L'Unification intelligente}
+
+Nous avons implémenté un prédicat d'unification sur-mesure, \texttt{unifier\_lpo/3}, qui gère nos structures de variables encapsulées et utilise le \textit{occurs check} natif de Prolog pour éviter les unifications infinies ($x = f(x)$).
+
+\begin{lstlisting}
+% Unification intelligente gerant la structure var(Position, Variable)
+unifier_lpo(var(Pos1, V), Terme, [subst(Pos1, Terme)]) :- 
+    !, unify_with_occurs_check(V, Terme).
+unifier_lpo(Terme, var(Pos2, V), [subst(Pos2, Terme)]) :- 
+    !, unify_with_occurs_check(V, Terme).
+
+% Decomposition pour les predicats complexes
+unifier_lpo(T1, T2, SubstGlobales) :-
+    compound(T1), compound(T2), !,
+    T1 =.. [Nom | Args1],
+    T2 =.. [Nom | Args2],
+    unifier_listes_args(Args1, Args2, SubstGlobales).
+\end{lstlisting}
+
+La fonction retourne une liste de substitutions sous la forme \texttt{subst(IndexVariable, NouveauTerme)}.
+
+\subsubsection{Cohérence globale et Backtracking}
+
+En logique propositionnelle, chaque chemin était vérifié indépendamment (\texttt{tous\_chemins\_connectes}). En LPO, nous utilisons \texttt{parcourir\_chemins/2} pour accumuler toutes les substitutions nécessaires à la fermeture de \textbf{tous} les chemins dans une seule liste \texttt{ListeSubst}. 
+
+Si l'unification sur le chemin 2 nécessite que $X=a$, mais que le chemin 1 avait déjà imposé $X=b$, Prolog va automatiquement déclencher un \textit{backtracking}. Il remontera dans l'arbre des chemins pour chercher une autre paire de feuilles sur le chemin 1, garantissant ainsi une cohérence \textbf{globale} de la preuve.
+
+\subsubsection{Validation finale : Le Graphe de dépendance}
+
+La dernière contrainte théorique forte de la méthode des connexions concerne les quantificateurs existentiels ($\exists$, règles $\delta$). Ils introduisent des constantes de Skolem qui imposent un ordre strict d'instanciation. Pour vérifier que cet ordre est cohérent, le prédicat \texttt{verifier\_connexions/3} construit un \textbf{graphe orienté de dépendance}.
+
+Ce graphe fusionne deux types d'arêtes :
+\begin{enumerate}
+    \item \textbf{Les liens structurels (\texttt{arete(struct, P, I)})} : Ils lient l'index d'un parent à l'index de ses fils directs dans l'arbre syntaxique, représentant l'ordre sémantique de la formule.
+    \item \textbf{Les liens de substitution (\texttt{arete(unif, I, V)})} : Extrait de la \texttt{ListeSubst}, ils lient l'indice d'une position présente dans un terme à la variable qui reçoit ce terme.
+\end{enumerate}
+
+\begin{lstlisting}
+% Validation globale avec graphe
+verifier_connexions(ArbreIndexe, ArbreChemins, Resultat) :-
+    % 1. Trouver une combinaison d'unification globale
+    parcourir_chemins(ArbreChemins, ListeSubst),
+    % 2. Construire le graphe de dependance
+    creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe),
+    % 3. Verifier l'absence de cycles
+    \+ detecter_cycle(Graphe),
+    !, 
+    Resultat = valide.
+\end{lstlisting}
+
+Si le prédicat \texttt{detecter\_cycle/1} trouve une boucle dans ce graphe (par exemple, si une variable $X$ dépend d'une constante de Skolem $c$, mais que l'unification demande de remplacer $X$ par un terme contenant $c$), alors la substitution est invalide. Prolog va backtracker pour trouver une autre combinaison. Si aucune combinaison acyclique n'est trouvée pour la multiplicité $M$, la méthode passe à $M+1$.
 
 % ==============================================================================
 % CONCLUSION
