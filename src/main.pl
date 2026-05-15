@@ -88,12 +88,22 @@ verifier(Formule, lpo) :-
       ecrire_formule(Formule),
       write(' ==='), 
       nl,
+      verifier_boucle_lpo(Formule, 1, 10).
+
+% ============================================================================
+% verifier_boucle_lpo(+Formule, +Multiplicite, +Limite)
+%
+% Boucle sur la multiplicité jusqu'à trouver une validité ou atteindre la limite
+% ============================================================================
+verifier_boucle_lpo(Formule, M, Limite) :-
+      echo_nl,
+      (echo_on -> format(">>> TENTATIVE AVEC MULTIPLICITE M = ~w <<<~n", [M]) ; true),
 
       % Etape 1 : Arbre des formules indexé
       echo_nl,
       echo("--- Arbre syntaxique indexé ---"),
       echo_nl,
-      arbre_indexe_lpo:generer_arbre_indexe(Formule, 2, ArbreIndexe),
+      arbre_indexe_lpo:generer_arbre_indexe(Formule, M, ArbreIndexe),
       (
             echo_on -> arbre_indexe_lpo:afficher_arbre_indexe(ArbreIndexe)
             ;
@@ -123,21 +133,25 @@ verifier(Formule, lpo) :-
       ),
       echo_nl,
 
-      write("--- Résultat ---"),
       nl,
       
       recherche_connexions_lpo:verifier_connexions(ArbreIndexe, ArbreChemins, Resultat),
       
       (
             Resultat = valide -> 
-                   write("La formule est valide.")
+                  write("--- Résultat ---"), nl,
+                  format("La formule est valide (Démontrée avec multiplicité M = ~w).~n", [M]),
+                  write('=== Fin ==='), nl
            ;
-                write("La formule n'est pas valide (Pas de connexions ou cycle).")
-      ),
-      nl,
-      write('=== Fin ==='),
-      nl.
-
+            M < Limite ->
+                  (echo_on -> format("Échec avec M = ~w. Passage à M = ~w...~n", [M, M+1]) ; true),
+                  M1 is M + 1,
+                  verifier_boucle_lpo(Formule, M1, Limite)
+            ;
+                  write("--- Résultat ---"), nl,
+                  format("La formule n'est pas valide (Limite M = ~w atteinte : pas de connexions ou cycle détecté).~n", [Limite]),
+                  write('=== Fin ==='), nl
+      ).
 
 % ============================================================================
 % verif(+Formule, +Logique)
@@ -163,11 +177,11 @@ trace_verif(Formule, Logique) :-
 
 % Tests avec trace de l'exemple du cours et du TD :
 % prop
-% ?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
-% ?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
+?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))). % ex du cours
+?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))). % ex du TD
 % lpo
 % ?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo). % ex1 du TD
 % ?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo). % ex2 du TD
 % ?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
 % ?- trace_verif((x pt (y ie (p(x,y)))) impl (y ie (x pt (p(x,y)))), lpo). % Test de cycle
-?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
+% ?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
