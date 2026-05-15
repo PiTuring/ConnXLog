@@ -18,14 +18,23 @@
 % ============================================================================
 
 % ============================================================================
-% verifier_connexions(+ArbreChemins, -Resultat, -ListeSubstTotale)
+% verifier_connexions(+ArbreIndexe, +ArbreChemins, -Resultat)
 %
-% Resultat : valide si tous les chemins finaux contiennent une connexion.
-% ListeSubstTotale : Ensemble des substitutions collectées pour le graphe.
+% Cherche une combinaison de connexions pour tous les chemins finaux
+% telle qu'il n'y ait aucun cycle de dépendance.
 % ============================================================================
-verifier_connexions(Arbre, Resultat, ListeSubst) :-
-    (parcourir_chemins(Arbre, ListeSubst) -> Resultat = valide ; Resultat = invalide, ListeSubst = []).
+verifier_connexions(ArbreIndexe, ArbreChemins, Resultat) :-
+    % On cherche une combinaison (Prolog backtrackera ici si la suite échoue)
+    parcourir_chemins(ArbreChemins, ListeSubst),
+    % On construit le graphe pour cette combinaison précise
+    creer_graphe_dependance(ArbreIndexe, ListeSubst, Graphe),
+    % On vérifie qu'il n'ya pas de cycle
+    \+ detecter_cycle(Graphe),
+    !,  % On cut si on a déjà trouvé une valide
+    Resultat = valide.
 
+% Si toutes les combinaisons échouent (soit pas de connexion, soit que des cycles)
+verifier_connexions(_, _, invalide).
 
 
 % Parcourt l'arbre des chemins et accumule les substitutions
@@ -33,7 +42,7 @@ parcourir_chemins(feuille(etiq_chemin_final(Feuilles)), Subst) :-
     connexion(Feuilles, _, _, Subst).
 
 parcourir_chemins(noeud(_, ListFils), SubstTotale) :-
-    maplist(parcourir_chemins, ListeFils, ListesSubst),
+    maplist(parcourir_chemins, ListFils, ListesSubst),
     append(ListesSubst, SubstTotale).
 
 
@@ -89,7 +98,7 @@ afficher_connexions(feuille(etiq_chemin_final(Feuilles)), N, N1) :-
             nettoyer_formule(Symbole2, SymbolePropre2),
             
             % On affiche avec les bonnes variables
-            format("connexion (~w, a~w) entre '~w' et '~w'.~n", [Index1, Index2, SymbolePropre1, SymbolePropre2]),
+            format("connexion (~w, ~w) entre '~w' et '~w'.~n", [Index1, Index2, SymbolePropre1, SymbolePropre2]),
             format("             Substitutions : ~w~n", [Subst])
         ;   
             format("aucune connexion.~n")
