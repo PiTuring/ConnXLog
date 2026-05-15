@@ -480,7 +480,7 @@ La fonction retourne une liste de substitutions sous la forme \texttt{subst(Inde
 
 \subsubsection{Cohérence globale et Backtracking}
 
-En logique propositionnelle, chaque chemin était vérifié indépendamment (\texttt{tous\_chemins\_connectes}). En LPO, nous utilisons \texttt{parcourir\_chemins/2} pour accumuler toutes les substitutions nécessaires à la fermeture de \textbf{tous} les chemins dans une seule liste \texttt{ListeSubst}. 
+En logique propositionnelle, chaque chemin était vérifié indépendamment. En LPO, nous utilisons \texttt{parcourir\_chemins/2} pour accumuler toutes les substitutions nécessaires à la fermeture de \textbf{tous} les chemins dans une seule liste \texttt{ListeSubst}. 
 
 Si l'unification sur le chemin 2 nécessite que $X=a$, mais que le chemin 1 avait déjà imposé $X=b$, Prolog va automatiquement déclencher un \textit{backtracking}. Il remontera dans l'arbre des chemins pour chercher une autre paire de feuilles sur le chemin 1, garantissant ainsi une cohérence \textbf{globale} de la preuve.
 
@@ -510,11 +510,99 @@ verifier_connexions(ArbreIndexe, ArbreChemins, Resultat) :-
 Si le prédicat \texttt{detecter\_cycle/1} trouve une boucle dans ce graphe (par exemple, si une variable $X$ dépend d'une constante de Skolem $c$, mais que l'unification demande de remplacer $X$ par un terme contenant $c$), alors la substitution est invalide. Prolog va backtracker pour trouver une autre combinaison. Si aucune combinaison acyclique n'est trouvée pour la multiplicité $M$, la méthode passe à $M+1$.
 
 % ==============================================================================
-% CONCLUSION
+% EXEMPLES ET RÉSULTATS
 % ==============================================================================
-\section*{Conclusion}
-\addcontentsline{toc}{section}{Conclusion}
+\section*{Exemples et résultats}
+\addcontentsline{toc}{section}{Exemples et résultats}
 
-% Bilan du projet, difficultés rencontrées, ce que vous avez appris, et éventuelles pistes d'amélioration.
+Pour valider l'exactitude de notre implémentation, nous avons testé notre programme sur une série d'exemples issus du cours et des travaux dirigés (TD). En voici une sélection démontrant le bon fonctionnement de la méthode des connexions.
+
+\subsection*{Logique Propositionnelle}
+
+\subsubsection*{Exemple 1 : Transitivité de l'implication (Exemple du cours)}
+\textbf{Formule mathématique :} 
+$$ (p \rightarrow q) \rightarrow ((q \rightarrow r) \rightarrow (p \rightarrow r)) $$
+
+\textbf{Requête Prolog :}
+\begin{lstlisting}
+?- trace_verif((p impl q) impl ((q impl r) impl (p impl r))).
+\end{lstlisting}
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{img/ex1.png} \\
+    \vspace{0.2cm}
+    \small \textit{Figure 1 : Résultat de l'exécution pour l'exemple 1 (Propositionnelle)}
+\end{center}
+
+\vspace{0.5cm}
+
+\subsubsection*{Exemple 2 : Exemple du TD}
+\textbf{Formule mathématique :} 
+$$ ((a \land b) \rightarrow c) \rightarrow ((a \rightarrow c) \lor (b \rightarrow c)) $$
+
+\textbf{Requête Prolog :}
+\begin{lstlisting}
+?- trace_verif(((a et b) impl c) impl ((a impl c) ou (b impl c))).
+\end{lstlisting}
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{img/ex2.png} \\
+    \vspace{0.2cm}
+    \small \textit{Figure 2 : Résultat de l'exécution pour l'exemple 2 (Propositionnelle)}
+\end{center}
+
+\newpage
+
+\subsection*{Logique du Premier Ordre (LPO)}
+
+\subsubsection*{Exemple 3 : Exemple 1 du TD}
+\textbf{Formule mathématique :} 
+$$ (\exists y \ (p(y) \land (\forall x \ (p(x) \rightarrow q(x,y))))) \rightarrow (\exists x \ (p(x) \land q(x,x))) $$
+
+\textbf{Requête Prolog :}
+\begin{lstlisting}
+?- trace_verif((y ie (p(y) et (x pt (p(x) impl q(x,y))))) impl (x ie (p(x) et q(x,x))), lpo).
+\end{lstlisting}
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{img/ex3.png} \\
+    \vspace{0.2cm}
+    \small \textit{Figure 3 : Résultat de l'exécution pour l'exemple 1 du TD (LPO)}
+\end{center}
+
+\vspace{0.5cm}
+
+\subsubsection*{Exemple 4 : Exemple 2 du TD (Dépendances et ordre)}
+\textbf{Formule mathématique :} 
+$$ (\exists x \ (\forall y \ (p(x,y)))) \rightarrow (\forall x \ (\exists y \ (p(y,x)))) $$
+
+\textbf{Requête Prolog :}
+\begin{lstlisting}
+?- trace_verif((x ie (y pt (p(x,y)))) impl (x pt (y ie (p(y,x)))), lpo).
+\end{lstlisting}
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{img/ex4.png} \\
+    \vspace{0.2cm}
+    \small \textit{Figure 4 : Résultat de l'exécution pour l'exemple 2 du TD (LPO) - Graphe de dépendance}
+\end{center}
+
+\vspace{0.5cm}
+
+\subsubsection*{Exemple 5 : Exemple 4 du TD (Nécessité de la multiplicité)}
+\textbf{Formule mathématique :} 
+$$ \exists x \ (\forall y \ (p(y) \rightarrow p(x))) $$
+
+\textbf{Requête Prolog :}
+\begin{lstlisting}
+?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo).
+\end{lstlisting}
+
+\begin{center}
+    \includegraphics[width=0.8\textwidth]{img/ex5.png} \\
+    \vspace{0.2cm}
+    \small \textit{Figure 5 : Résultat de l'exécution pour l'exemple 4 du TD (LPO) - Multiplicité}
+\end{center}
+
 
 \end{document}
