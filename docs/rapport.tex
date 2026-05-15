@@ -162,11 +162,85 @@ etiqueter(A, Polarite, Index, IndexOut, _, Suffix,
 \end{lstlisting}
 
 \subsection{Structures de données : Représentation des arbres}
-% Décris la manière dont l'arbre syntaxique et l'arbre des chemins sont représentés en Prolog (ex: listes imbriquées, termes spécifiques...).
+
+Pour représenter un arbre dans notre projet, nous avons choisi une structure récursive polyvalente capable de représenter aussi bien l'arbre syntaxique indexé que l'arbre des chemins.
+
+\subsubsection{Une structure récursive uniforme}
+
+Un arbre est défini de manière inductive par deux constructeurs principaux :
+\begin{itemize}
+    \item \textbf{\texttt{noeud(Etiquette, ListeFils)}} : Représente un point de divergence ou de linéarité dans la formule. Contrairement à un arbre binaire classique, nous utilisons une liste de fils pour permettre une plus grande flexibilité (notamment pour la gestion de la multiplicité en LPO).
+    \item \textbf{\texttt{feuille(Etiquette)}} : Représente un point terminal, (un littéral).
+\end{itemize}
+
+L'étiquette contient les métadonnées nécessaires au traitement : pour l'arbre syntaxique, il s'agit du prédicat \texttt{etiq\_formule} vu précédemment. Pour l'arbre des chemins, elle contient l'ensemble des littéraux collectés.
+
+\begin{lstlisting}
+% Verification du type de noeud
+est_feuille(feuille(_)).
+est_noeud(noeud(_, _)).
+
+% Accesseurs pour l'extraction de donnees
+noeud_etiquette(noeud(E, _), E).
+noeud_fils(noeud(_, Fils), Fils).
+feuille_etiquette(feuille(E), E).
+\end{lstlisting}
+
+\subsubsection{Polyvalence de la structure}
+
+Cette implémentation est utilisée à deux étapes clés du programme :
+\begin{enumerate}
+    \item \textbf{L'Arbre Indexé} : Chaque nœud correspond à une sous-formule et chaque feuille à un atome avec sa polarité. C'est la base de la décomposition logique.
+    \item \textbf{L'Arbre des Chemins} : Il s'agit d'une transformation de l'arbre précédent où chaque nœud représente l'état des chemins (la "matrice") à un point donné de l'exploration.
+\end{enumerate}
+
+Cette uniformité de structure facilite l'écriture des algorithmes de parcours de profondeur, car les mêmes prédicats de navigation peuvent être réutilisés sur les deux types d'arbres.
 
 \subsection{Prédicats utilitaires}
-% Présente les fonctions transversales : manipulation de listes, affichages, gestion de la polarité des littéraux, etc.
+Pour soutenir les étapes de décomposition et de recherche de preuves, nous avons développé un ensemble d'outils. Ces prédicats gèrent la syntaxe logique, la manipulation des variables et les mécanismes d'affichage.
 
+\subsubsection{Identification des littéraux et opérateurs}
+
+Un point crucial de la méthode des connexions est de savoir quand arrêter la décomposition d'une formule. Le prédicat \texttt{est\_litteral/1} permet d'identifier si un terme est un atome (propositionnel ou prédicat du premier ordre) en vérifiant qu'il n'est pas un connecteur logique réservé.
+
+\begin{lstlisting}
+% Un terme est un litteral s'il n'est pas un connecteur logique
+est_litteral(A) :-
+    atom(A), !.
+est_litteral(A) :-
+    compound(A),
+    functor(A, Foncteur, _),
+    \+ connecteur(Foncteur).
+\end{lstlisting}
+
+Nous avons également défini les priorités d'opérateurs pour permettre une écriture naturelle des formules (ex: \texttt{p et q impl r}).
+
+\subsubsection{Substitution de termes}
+
+Particulièrement utilisé en logique du premier ordre pour l'application des règles $\gamma$ (universelles) et $\delta$ (existentielles), le prédicat \texttt{substituer/4} effectue un remplacement récursif d'un terme par un autre. 
+
+\begin{lstlisting}
+% Remplacement recursif de Ancien par Nouveau dans Terme
+substituer(Ancien, Ancien, Nouveau, Nouveau) :- !.
+substituer(Terme, Ancien, Nouveau, Resultat) :-
+    compound(Terme),
+    Terme =.. [F | Args],
+    maplist([Arg, ArgSubst]>>(substituer(Arg, Ancien, Nouveau, ArgSubst)), Args, ArgsSubst),
+    Resultat =.. [F | ArgsSubst].
+substituer(Terme, _, _, Terme).
+\end{lstlisting}
+
+Ce prédicat utilise l'opérateur "univ" (\texttt{=..}) pour décomposer n'importe quel prédicat en une liste de ses arguments, permettant une substitution générique quelle que soit l'arité du terme.
+
+\subsubsection{Gestion de l'affichage et de la trace}
+
+Nous avons créé tout un module d'affichage pour suivre les traces de la méthode des connexions. Pour ne pas encombrer la logique métier, ces outils sont regroupés et traitent les points suivants :
+
+\begin{itemize}
+    \item \textbf{Écriture symbolique} : Les prédicats \texttt{ecrire\_formule/1} et \texttt{ecrire\_type/1} traduisent les termes internes (ex: \texttt{impl}, \texttt{alpha}) en symboles mathématiques ($\rightarrow, \alpha, \forall, \exists$).
+    \item \textbf{Nettoyage des variables} : \texttt{nettoyer\_formule/2} transforme les structures internes complexes (utilisées pour l'unification) en noms lisibles pour l'utilisateur final.
+    \item \textbf{Système d'Echo} : Nous avons réutilisé le système d'affichage donné pour le projet d'algorithme d'unification de Martelli-Montanari au 1er semestre, dans le cadre de l'UE \textit{Logique et Modèles de Calculs}.
+\end{itemize}
 
 % ==============================================================================
 % PARTIE II : LOGIQUE PROPOSITIONNELLE
