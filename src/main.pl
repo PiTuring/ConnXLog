@@ -7,7 +7,14 @@
     verif/2,
 
     trace_verif/1,  
-    trace_verif/2
+    trace_verif/2, 
+
+    op(750, fy,  non),
+    op(800, xfy, et),
+    op(850, xfy, ou),
+    op(900, xfy, impl),
+    op(950, xfy, pt),  
+    op(950, xfy, ie)
 ]).
 
 :- include(core/utils).
@@ -185,5 +192,3 @@ trace_verif(Formule, Logique) :-
 % ?- trace_verif((x pt (y ie (p(y,x)))) impl (x ie (y pt (p(x,y)))), lpo). % ex3 du TD
 % ?- trace_verif((x pt (y ie (p(x,y)))) impl (y ie (x pt (p(x,y)))), lpo). % Test de cycle
 % ?- trace_verif(x ie (y pt (p(y) impl p(x))), lpo). % ex4 du TD
-
-?- verif((p impl q) impl ((q impl r) impl (p impl r))).
